@@ -19,6 +19,11 @@ Platform Core runtime internals.
 Growth Engine is the Customer source of truth. Numeria Studio references
 `customerId`.
 
+MVP identity is based on `workspaceId + userId`. Do not require
+`professionalId` in Numeria Studio integration payloads. `professionalId` is a
+future extension for multiple brands, multiple practitioners, or richer
+practitioner profile management.
+
 Growth Engine may call:
 
 - `Customer.Create`
@@ -47,9 +52,49 @@ Growth Engine must not copy unrestricted consultation text, practitioner notes,
 or domain-specific appraisal data for marketing use. Use IDs, tags, categories,
 allowlisted fields, or snapshots where the contracts allow it.
 
+Numeria Studio must not own payment method, payment state, or revenue records.
+It may read `paymentStatus`, customer context, reservation context, and menu
+context from Growth Engine to decide whether a Session can start.
+
+## Payments
+
+MVP supports Stripe only.
+
+Growth Engine owns:
+
+- Stripe Checkout and Payment Intent creation
+- `paymentStatus`
+- `refundStatus`
+- reservation-to-payment links
+- customer-to-payment links
+- sales and revenue analysis
+- payment completed and refunded events
+
+Supported MVP payment fields:
+
+- `workspaceId`
+- `createdByUserId`
+- `customerId`
+- `reservationId`
+- `productId`
+- `paymentProvider = stripe`
+- `stripePaymentIntentId`
+- `stripeCheckoutSessionId`
+- `paymentStatus`
+- `refundStatus`
+- `paidAt`
+- `amount`
+- `currency`
+
+Do not implement bank transfer, PayPay, cash, external payment links, Coconala,
+or other payment providers in MVP.
+
 ## SNS Planner
 
 Growth Engine calls SNS Planner only for post draft creation.
+
+SNS Planner MVP payloads should also use `workspaceId + userId`. Do not require
+`professionalId`.
 
 Growth Engine decides and sends:
 
@@ -89,6 +134,9 @@ lead nurturing, Business Plan rules, or sales judgement.
 ## AI Platform Core
 
 Growth Engine delegates AI execution and usage tracking to AI Platform Core.
+
+AI Platform Core Activity and Usage records should use `workspaceId + userId`
+for MVP attribution. Do not require `professionalId`.
 
 Approved API operations:
 
