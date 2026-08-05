@@ -12,9 +12,16 @@ import {
 import { demoWorkspace } from "@/lib/mock-data";
 
 export async function POST(request: Request) {
-  const payload = await request.json();
   const stripe = createStripeClient();
-  const event = await stripe.parseWebhookEvent(payload);
+  const rawBody = await request.text();
+  const signatureHeader = request.headers.get("stripe-signature");
+  let event;
+
+  try {
+    event = await stripe.parseWebhookEvent(rawBody, signatureHeader);
+  } catch {
+    return NextResponse.json({ error: "Invalid Stripe webhook." }, { status: 400 });
+  }
 
   if (await hasProcessedExternalEvent(demoWorkspace.id, "stripe", event.id)) {
     return NextResponse.json({ received: true, ignored: "duplicate_event", eventId: event.id });
