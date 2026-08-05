@@ -72,6 +72,28 @@ Avoid creating alternative root terms such as `Client` as a database master enti
 
 Use `Report` for Growth Engine, Event, API, and cross-repository contracts. If another repository keeps `Document` internally for legacy reasons, Growth Engine integration should still use `Report`.
 
+## Approved External Names
+
+Use these approved Professional Studio operation and event names when integrating with Numeria Studio or future studios:
+
+- `Session.Start`
+- `Session.Complete`
+- `Report.Generate`
+- `Report.Preview`
+- `Report.ExportPdf`
+- `studio.session.started.v1`
+- `studio.session.completed.v1`
+- `studio.report.generated.v1`
+- `studio.service_reference.updated.v1`
+
+Do not use these legacy names in cross-system contracts:
+
+- `Session.Started`
+- `Session.Completed`
+- `Document.Generated`
+
+Do not implement `studio.recommendation.created.v1` as a stable event yet. It is pending in the contracts repository.
+
 ## API and Event Rule
 
 Use APIs for immediate reads, writes, and UI operations.
@@ -79,6 +101,21 @@ Use APIs for immediate reads, writes, and UI operations.
 Use events for state changes and follow-up processing.
 
 Do not replace API calls with events when the user needs an immediate result. Do not use APIs as the only mechanism when downstream systems must react to a state change.
+
+## SNS Planner Boundary
+
+Growth Engine decides the business purpose, target audience, offer, and CTA before requesting SNS Planner.
+
+Growth Engine sends SNS Planner a post creation brief containing:
+
+- `purpose`
+- `targetAudience`
+- `cta`
+- `channel`
+- `tone`
+- `constraints`
+
+SNS Planner returns post drafts and emits `sns.post_draft.created.v1` or `sns.post_draft.updated.v1` when draft state changes.
 
 ## Contract Versioning
 
