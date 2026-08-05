@@ -1,5 +1,6 @@
 import type {
   Customer,
+  AuditLogEntry,
   Lead,
   MarketingInsight,
   Payment,
@@ -192,6 +193,8 @@ export const revenues: Revenue[] = [
 ];
 
 export const processedExternalEvents: ProcessedExternalEvent[] = [];
+
+export const auditLogs: AuditLogEntry[] = [];
 
 export const insights: MarketingInsight[] = [
   {
