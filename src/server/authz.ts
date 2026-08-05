@@ -16,6 +16,12 @@ export function requireBusinessAccess(context: WorkspaceContext) {
   }
 }
 
+export function requireActiveUser(context: WorkspaceContext) {
+  if (context.user.status !== "active") {
+    throw new AuthorizationError("Active user is required.");
+  }
+}
+
 export function requireWorkspaceAccess(context: WorkspaceContext, workspaceId: string) {
   if (context.workspace.id !== workspaceId || context.user.workspaceId !== workspaceId) {
     throw new AuthorizationError("Workspace access is denied.");
