@@ -1,6 +1,6 @@
 # Integration Guide
 
-This document explains how Growth Engine should integrate with the other Professional Platform repositories using the shared contracts repository.
+This document explains how Growth Engine integrates with the other Professional Platform repositories using the shared contracts repository.
 
 Shared contracts source:
 
@@ -89,6 +89,8 @@ Growth Engine consumes these approved events:
 
 Pending events in the contracts repository must not be treated as stable until approved.
 
+Do not use legacy event names such as `Session.Started`, `Session.Completed`, or `Document.Generated` for cross-system contracts.
+
 ## Growth Engine to Numeria Studio
 
 Growth Engine passes business context into Numeria Studio when a user starts or continues professional work.
@@ -119,7 +121,7 @@ Numeria Studio should return Professional Studio context through approved APIs a
 - follow-up allowed flag
 - review request allowed flag
 
-Growth Engine must not copy unrestricted reading text or sensitive professional fields for marketing use.
+Growth Engine must not copy unrestricted reading text, full consultation text, private practitioner notes, or sensitive Professional Studio fields for marketing use.
 
 ## Growth Engine to SNS Planner
 
@@ -127,12 +129,14 @@ Growth Engine decides business strategy. SNS Planner creates post drafts.
 
 Growth Engine sends:
 
-- objective
-- target audience
+- `purpose`
+- `targetAudience`
 - topic
 - content type
 - channel
 - CTA
+- tone
+- constraints
 - source insights
 - due date
 
@@ -141,6 +145,7 @@ SNS Planner returns:
 - draft id
 - status
 - channel
+- draft variants
 - published timestamp when available
 - tracking link id when available
 
