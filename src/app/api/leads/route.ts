@@ -34,9 +34,9 @@ const createLeadSchema = z.object({
   lastContactAt: z.string().optional()
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const context = await resolveBusinessApiContext();
+    const context = await resolveBusinessApiContext(request);
     const records = await listLeads(context.workspace.id);
 
     return NextResponse.json({ leads: records });
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await resolveBusinessApiContext(parsed.data.workspaceId);
+    await resolveBusinessApiContext(request, parsed.data.workspaceId);
     const lead = await createLead(parsed.data);
 
     return NextResponse.json({ lead }, { status: 201 });
