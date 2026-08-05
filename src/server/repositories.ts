@@ -1,9 +1,9 @@
-import type { Customer, Lead, Payment, Product, Reservation, Revenue } from "@/domain/entities";
+import type { Customer, Lead, Payment, ProcessedExternalEvent, Product, Reservation, Revenue } from "@/domain/entities";
 import {
   customers,
   leads,
   payments,
-  processedStripeWebhookEventIds,
+  processedExternalEvents,
   products,
   revenues,
   todayReservations
@@ -199,12 +199,44 @@ export async function createRevenue(input: Omit<Revenue, "id" | "createdAt">): P
   return revenue;
 }
 
-export async function hasProcessedStripeWebhookEvent(eventId: string): Promise<boolean> {
-  return processedStripeWebhookEventIds.includes(eventId);
+export async function hasProcessedExternalEvent(
+  workspaceId: string,
+  provider: ProcessedExternalEvent["provider"],
+  externalEventId: string
+): Promise<boolean> {
+  return processedExternalEvents.some(
+    (event) =>
+      event.workspaceId === workspaceId &&
+      event.provider === provider &&
+      event.externalEventId === externalEventId
+  );
 }
 
-export async function recordProcessedStripeWebhookEvent(eventId: string): Promise<void> {
-  if (!processedStripeWebhookEventIds.includes(eventId)) {
-    processedStripeWebhookEventIds.push(eventId);
+export async function recordProcessedExternalEvent(input: {
+  workspaceId: string;
+  provider: ProcessedExternalEvent["provider"];
+  externalEventId: string;
+  eventType: string;
+}): Promise<ProcessedExternalEvent> {
+  const existingEvent = processedExternalEvents.find(
+    (event) =>
+      event.workspaceId === input.workspaceId &&
+      event.provider === input.provider &&
+      event.externalEventId === input.externalEventId
+  );
+
+  if (existingEvent) {
+    return existingEvent;
   }
+
+  const now = new Date().toISOString();
+  const processedEvent = {
+    id: `pevt_${Date.now()}`,
+    processedAt: now,
+    createdAt: now,
+    ...input
+  };
+
+  processedExternalEvents.push(processedEvent);
+  return processedEvent;
 }
