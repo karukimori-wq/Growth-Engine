@@ -225,6 +225,21 @@ or richer practitioner profile support.
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
 
+### processed_external_events
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | text primary key | |
+| workspace_id | text not null | |
+| provider | text not null | `stripe`, `line`, `sns_planner`, `numeria`, `ai_platform_core` |
+| external_event_id | text not null | Provider event ID, for example Stripe `evt_*` |
+| event_type | text not null | Provider event type |
+| processed_at | timestamptz | |
+| created_at | timestamptz | |
+
+`provider + external_event_id` must be unique per Workspace. This prevents
+double processing of retried webhooks and repeated Event Engine deliveries.
+
 ### integration_connections
 
 | Column | Type | Notes |
@@ -256,6 +271,7 @@ or richer practitioner profile support.
 - `revenues(workspace_id, content_id)`
 - `audit_logs(workspace_id, occurred_at)`
 - `event_outbox(status, created_at)`
+- unique `processed_external_events(workspace_id, provider, external_event_id)`
 
 ## Next Implementation Step
 
