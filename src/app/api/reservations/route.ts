@@ -18,9 +18,9 @@ const createReservationSchema = z.object({
   paymentStatus: z.enum(["unpaid", "paid", "refunded"]).default("unpaid")
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const context = await resolveBusinessApiContext();
+    const context = await resolveBusinessApiContext(request);
     const records = await listReservations(context.workspace.id);
 
     return NextResponse.json({ reservations: records });
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const context = await resolveBusinessApiContext(parsed.data.workspaceId);
+    const context = await resolveBusinessApiContext(request, parsed.data.workspaceId);
     const product = await findProduct(context.workspace.id, parsed.data.productId);
 
     if (!product) {
