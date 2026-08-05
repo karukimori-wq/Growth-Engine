@@ -22,6 +22,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - mock repository layer for Lead, Customer, Product, Reservation, Payment, and Revenue
 - first Business APIs for leads, customers, products, reservations, lead conversion, Stripe checkout, and Stripe webhooks
 - database schema draft for persistent storage
+- PostgreSQL-oriented DDL draft for the persistent tables and required indexes
 - MVP identity rule: use `workspaceId + userId`, keep `professionalId` as future extension
 - MVP payment rule: Growth Engine owns Stripe-only customer-facing payments
 - Stripe Checkout and webhook API prototypes
@@ -64,4 +65,4 @@ Phase 1 should continue with:
 4. replace the mock Event Outbox with durable Event Engine dispatcher storage, transport, retry handling, and observability
 5. database-backed idempotent webhook/event consumers
 6. replace Stripe checkout prototypes with live Stripe SDK calls
-7. enforce `processed_external_events(workspace_id, provider, external_event_id)` with a database unique constraint
+7. apply the DDL in a real database migration and enforce it in production environments

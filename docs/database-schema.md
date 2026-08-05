@@ -5,6 +5,9 @@ This document defines the first persistent storage shape for Growth Engine.
 The current implementation still uses mock repositories. The schema below is the
 target for replacing those repositories with database-backed storage.
 
+Executable PostgreSQL-oriented DDL for this shape is maintained in
+`docs/database-ddl.sql`.
+
 ## Principles
 
 - Every tenant-owned table includes `workspace_id`.
