@@ -1,4 +1,14 @@
-import type { Customer, Lead, MarketingInsight, Payment, Product, Reservation, Revenue, Workspace } from "@/domain/entities";
+import type {
+  Customer,
+  Lead,
+  MarketingInsight,
+  Payment,
+  ProcessedExternalEvent,
+  Product,
+  Reservation,
+  Revenue,
+  Workspace
+} from "@/domain/entities";
 
 export const demoWorkspace: Workspace = {
   id: "ws_demo_numeria",
@@ -181,7 +191,7 @@ export const revenues: Revenue[] = [
   }
 ];
 
-export const processedStripeWebhookEventIds: string[] = [];
+export const processedExternalEvents: ProcessedExternalEvent[] = [];
 
 export const insights: MarketingInsight[] = [
   {
