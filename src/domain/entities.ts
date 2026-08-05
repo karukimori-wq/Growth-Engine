@@ -155,6 +155,32 @@ export type ProcessedExternalEvent = {
   createdAt: Timestamp;
 };
 
+export type AuditAction =
+  | "ContentBrief.Requested"
+  | "Customer.Created"
+  | "Customer.Updated"
+  | "Lead.Converted"
+  | "Reservation.Created"
+  | "Reservation.Changed"
+  | "Payment.CheckoutCreated"
+  | "Payment.Completed"
+  | "Payment.Refunded"
+  | "ExternalMessage.Sent"
+  | "AiSuggestion.Executed"
+  | "IntegrationSettings.Changed"
+  | "Data.Deleted";
+
+export type AuditLogEntry = {
+  id: string;
+  workspaceId: string;
+  actorUserId: string;
+  action: AuditAction;
+  targetType: string;
+  targetId?: string;
+  occurredAt: Timestamp;
+  metadata: Record<string, unknown>;
+};
+
 export type Reservation = {
   id: string;
   workspaceId: string;
