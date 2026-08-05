@@ -68,7 +68,10 @@ Growth Engine owns:
 - reservation-to-payment links
 - customer-to-payment links
 - sales and revenue analysis
-- payment completed and refunded events
+
+Payment APIs and payment events are internal to Growth Engine in the current
+MVP. They must not be treated as approved cross-system APIs or events until they
+appear in `docs/contracts/api-catalog.md` and `docs/contracts/event-catalog.md`.
 
 Supported MVP payment fields:
 
@@ -189,6 +192,7 @@ Before merging integration changes:
 
 - Confirm each operation exists in `docs/contracts/api-catalog.md`.
 - Confirm each event exists in `docs/contracts/event-catalog.md`.
+- Confirm app responsibility boundaries follow `docs/contracts/app-responsibilities.md`.
 - Confirm Customer canonical data remains in Growth Engine.
 - Confirm Professional Studio uses `Report`, not `Document`, externally.
 - Confirm SNS Planner receives business intent and does not create it.
