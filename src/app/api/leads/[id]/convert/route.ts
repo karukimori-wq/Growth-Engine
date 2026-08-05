@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError, resolveBusinessApiContext } from "@/server/api";
+import { recordAuditLog } from "@/server/audit-log";
 import { publishEvent } from "@/server/events";
 import { convertLeadToCustomer, findLead } from "@/server/repositories";
 
@@ -23,6 +24,17 @@ export async function POST(request: Request, context: RouteContext) {
       source: "growth-engine",
       workspaceId: customer.workspaceId,
       payload: { customerId: customer.id, leadId: lead.id }
+    });
+    await recordAuditLog({
+      workspaceId: customer.workspaceId,
+      actorUserId: apiContext.user.id,
+      action: "Lead.Converted",
+      targetType: "lead",
+      targetId: lead.id,
+      metadata: {
+        customerId: customer.id,
+        sourceChannel: lead.sourceChannel
+      }
     });
 
     return NextResponse.json({ customer, event }, { status: 201 });
