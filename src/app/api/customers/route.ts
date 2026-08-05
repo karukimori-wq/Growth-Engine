@@ -23,9 +23,9 @@ const createCustomerSchema = z.object({
   purchaseCount: z.number().int().default(0)
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const context = await resolveBusinessApiContext();
+    const context = await resolveBusinessApiContext(request);
     const records = await listCustomers(context.workspace.id);
 
     return NextResponse.json({ customers: records });
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await resolveBusinessApiContext(parsed.data.workspaceId);
+    await resolveBusinessApiContext(request, parsed.data.workspaceId);
     const customer = await createCustomer(parsed.data);
     const event = await publishEvent({
       eventType: "growth.customer.created.v1",
