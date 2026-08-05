@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { publishEvent } from "@/server/events";
 import { createLead, listLeads } from "@/server/repositories";
 import { apiError, resolveBusinessApiContext } from "@/server/api";
 
@@ -58,14 +57,7 @@ export async function POST(request: Request) {
     await resolveBusinessApiContext(parsed.data.workspaceId);
     const lead = await createLead(parsed.data);
 
-    const event = await publishEvent({
-      eventType: "growth.lead.created.v1",
-      source: "growth-engine",
-      workspaceId: lead.workspaceId,
-      payload: { leadId: lead.id, sourceChannel: lead.sourceChannel }
-    });
-
-    return NextResponse.json({ lead, event }, { status: 201 });
+    return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     return apiError(error);
   }
