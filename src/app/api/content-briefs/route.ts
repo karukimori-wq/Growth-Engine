@@ -3,7 +3,6 @@ import { z } from "zod";
 import { createSnsPlannerClient } from "@/integrations/sns-planner";
 import { requireBusinessAccess, requireWorkspaceAccess } from "@/server/authz";
 import { recordAuditLog } from "@/server/audit-log";
-import { publishEvent } from "@/server/events";
 import { resolveWorkspaceContext } from "@/server/workspace";
 
 const contentBriefSchema = z.object({
@@ -56,16 +55,5 @@ export async function POST(request: Request) {
     }
   });
 
-  const event = await publishEvent({
-    eventType: "growth.content_brief.requested.v1",
-    source: "growth-engine",
-    workspaceId: context.workspace.id,
-    payload: {
-      draftId: draft.draftId,
-      campaignId: parsed.data.campaignId,
-      channel: parsed.data.channel
-    }
-  });
-
-  return NextResponse.json({ ...draft, event }, { status: 201 });
+  return NextResponse.json({ ...draft }, { status: 201 });
 }
