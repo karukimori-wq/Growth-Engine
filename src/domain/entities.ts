@@ -110,6 +110,38 @@ export type Product = {
   updatedAt: Timestamp;
 };
 
+export type Payment = {
+  id: string;
+  workspaceId: string;
+  customerId: string;
+  reservationId?: string;
+  productId?: string;
+  provider: "stripe";
+  externalPaymentId?: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  paidAt?: Timestamp;
+  refundedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type Revenue = {
+  id: string;
+  workspaceId: string;
+  paymentId: string;
+  customerId: string;
+  productId?: string;
+  campaignId?: string;
+  contentId?: string;
+  sourceChannel?: string;
+  amount: number;
+  occurredAt: Timestamp;
+  revenueType: "new" | "repeat" | "referral";
+  createdAt: Timestamp;
+};
+
 export type Reservation = {
   id: string;
   workspaceId: string;
