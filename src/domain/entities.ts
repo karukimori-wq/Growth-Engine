@@ -113,14 +113,17 @@ export type Product = {
 export type Payment = {
   id: string;
   workspaceId: string;
+  createdByUserId: string;
   customerId: string;
   reservationId?: string;
   productId?: string;
-  provider: "stripe";
-  externalPaymentId?: string;
+  paymentProvider: "stripe";
+  stripePaymentIntentId?: string;
+  stripeCheckoutSessionId?: string;
   amount: number;
   currency: string;
-  status: "pending" | "paid" | "failed" | "refunded";
+  paymentStatus: "unpaid" | "pending" | "paid" | "cancelled" | "failed" | "refunded";
+  refundStatus: "none" | "partial" | "full";
   paidAt?: Timestamp;
   refundedAt?: Timestamp;
   createdAt: Timestamp;
