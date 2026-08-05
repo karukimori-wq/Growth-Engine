@@ -1,32 +1,19 @@
-import type { Timestamp } from "@/domain/common";
+import type { AuditLogEntry } from "@/domain/entities";
+import { auditLogs } from "@/lib/mock-data";
 
-export type AuditAction =
-  | "ContentBrief.Requested"
-  | "Customer.Updated"
-  | "Lead.Converted"
-  | "Reservation.Changed"
-  | "Payment.Completed"
-  | "Payment.Refunded"
-  | "ExternalMessage.Sent"
-  | "AiSuggestion.Executed"
-  | "IntegrationSettings.Changed"
-  | "Data.Deleted";
-
-export type AuditLogEntry = {
-  id: string;
-  workspaceId: string;
-  actorUserId: string;
-  action: AuditAction;
-  targetType: string;
-  targetId?: string;
-  occurredAt: Timestamp;
-  metadata: Record<string, unknown>;
-};
+export type { AuditAction, AuditLogEntry } from "@/domain/entities";
 
 export async function recordAuditLog(input: Omit<AuditLogEntry, "id" | "occurredAt">): Promise<AuditLogEntry> {
-  return {
+  const entry = {
     id: `audit_${Date.now()}`,
     occurredAt: new Date().toISOString(),
     ...input
   };
+
+  auditLogs.push(entry);
+  return entry;
+}
+
+export async function listAuditLogs(workspaceId: string): Promise<AuditLogEntry[]> {
+  return auditLogs.filter((entry) => entry.workspaceId === workspaceId);
 }
