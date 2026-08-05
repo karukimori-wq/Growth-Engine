@@ -7,9 +7,9 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   try {
-    const apiContext = await resolveBusinessApiContext();
+    const apiContext = await resolveBusinessApiContext(request);
     const { id } = await context.params;
     const lead = await findLead(apiContext.workspace.id, id);
 
