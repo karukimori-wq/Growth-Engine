@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 export type StripeCheckoutRequest = {
   workspaceId: string;
   customerId: string;
@@ -35,8 +37,48 @@ export type StripeWebhookEvent =
 
 export type StripeClient = {
   createCheckoutSession: (request: StripeCheckoutRequest) => Promise<StripeCheckoutResponse>;
-  parseWebhookEvent: (payload: unknown) => Promise<StripeWebhookEvent>;
+  parseWebhookEvent: (rawBody: string, signatureHeader?: string | null) => Promise<StripeWebhookEvent>;
 };
+
+const stripeWebhookToleranceSeconds = 300;
+
+function verifyStripeWebhookSignature(rawBody: string, signatureHeader: string, webhookSecret: string): boolean {
+  const parts = Object.fromEntries(
+    signatureHeader.split(",").map((part) => {
+      const [key, value] = part.split("=");
+      return [key, value];
+    })
+  );
+  const timestamp = parts.t;
+  const expectedSignature = parts.v1;
+
+  if (!timestamp || !expectedSignature) {
+    return false;
+  }
+
+  const timestampSeconds = Number(timestamp);
+
+  if (!Number.isFinite(timestampSeconds)) {
+    return false;
+  }
+
+  const timestampAgeSeconds = Math.abs(Date.now() / 1000 - timestampSeconds);
+
+  if (timestampAgeSeconds > stripeWebhookToleranceSeconds) {
+    return false;
+  }
+
+  const signedPayload = `${timestamp}.${rawBody}`;
+  const actualSignature = createHmac("sha256", webhookSecret).update(signedPayload).digest("hex");
+  const actual = Buffer.from(actualSignature, "hex");
+  const expected = Buffer.from(expectedSignature, "hex");
+
+  if (actual.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(actual, expected);
+}
 
 export function createStripeClient(): StripeClient {
   return {
@@ -49,7 +91,16 @@ export function createStripeClient(): StripeClient {
         checkoutUrl: `https://checkout.stripe.com/c/pay/cs_demo_${idSuffix}?workspace=${request.workspaceId}`
       };
     },
-    async parseWebhookEvent(payload) {
+    async parseWebhookEvent(rawBody, signatureHeader) {
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+      if (webhookSecret) {
+        if (!signatureHeader || !verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSecret)) {
+          throw new Error("Invalid Stripe webhook signature.");
+        }
+      }
+
+      const payload = JSON.parse(rawBody) as unknown;
       const event = payload as Partial<StripeWebhookEvent>;
       const fallbackEventId = `evt_demo_${Date.now()}`;
 
