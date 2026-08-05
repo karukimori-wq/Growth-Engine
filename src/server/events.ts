@@ -18,6 +18,8 @@ export type EventPublisher = {
   markFailed(eventId: string): Promise<EventOutboxEntry | undefined>;
 };
 
+export type EventPublisherDriver = "mock" | "event-engine";
+
 function createMockEventPublisher(): EventPublisher {
   return {
     async publish<TPayload>(input: PublishEventInput<TPayload>) {
@@ -70,7 +72,21 @@ function createMockEventPublisher(): EventPublisher {
   };
 }
 
-const eventPublisher = createMockEventPublisher();
+function createEventEnginePublisher(): EventPublisher {
+  throw new Error("Event Engine publisher is not implemented yet.");
+}
+
+export function createEventPublisher(driver: EventPublisherDriver = "mock"): EventPublisher {
+  if (driver === "event-engine") {
+    return createEventEnginePublisher();
+  }
+
+  return createMockEventPublisher();
+}
+
+const eventPublisher = createEventPublisher(
+  (process.env.EVENT_PUBLISHER_DRIVER as EventPublisherDriver | undefined) ?? "mock"
+);
 
 export function getEventPublisher(): EventPublisher {
   return eventPublisher;
