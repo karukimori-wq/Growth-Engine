@@ -9,17 +9,19 @@ import {
   todayReservations
 } from "@/lib/mock-data";
 
-type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
-type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
-type CreateReservationInput = Omit<Reservation, "id" | "createdAt" | "updatedAt">;
-type CreatePaymentInput = Omit<Payment, "id" | "createdAt" | "updatedAt">;
-type CreateRevenueInput = Omit<Revenue, "id" | "createdAt">;
-type RecordProcessedExternalEventInput = {
+export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
+export type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
+export type CreateReservationInput = Omit<Reservation, "id" | "createdAt" | "updatedAt">;
+export type CreatePaymentInput = Omit<Payment, "id" | "createdAt" | "updatedAt">;
+export type CreateRevenueInput = Omit<Revenue, "id" | "createdAt">;
+export type RecordProcessedExternalEventInput = {
   workspaceId: string;
   provider: ProcessedExternalEvent["provider"];
   externalEventId: string;
   eventType: string;
 };
+
+export type GrowthRepositoryDriver = "mock" | "postgres";
 
 export type GrowthRepository = {
   listLeads(workspaceId: string): Promise<Lead[]>;
@@ -279,7 +281,21 @@ function createMockGrowthRepository(): GrowthRepository {
   };
 }
 
-const growthRepository = createMockGrowthRepository();
+function createPostgresGrowthRepository(): GrowthRepository {
+  throw new Error("Postgres GrowthRepository is not implemented yet.");
+}
+
+export function createGrowthRepository(driver: GrowthRepositoryDriver = "mock"): GrowthRepository {
+  if (driver === "postgres") {
+    return createPostgresGrowthRepository();
+  }
+
+  return createMockGrowthRepository();
+}
+
+const growthRepository = createGrowthRepository(
+  (process.env.GROWTH_REPOSITORY_DRIVER as GrowthRepositoryDriver | undefined) ?? "mock"
+);
 
 export function getGrowthRepository(): GrowthRepository {
   return growthRepository;
