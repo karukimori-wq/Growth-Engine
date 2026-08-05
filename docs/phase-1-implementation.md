@@ -15,6 +15,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - request-aware Workspace/User context adapter for production auth integration
 - server-side Business authorization helper
 - audit log interface
+- audit log repository boundary backed by the current mock store
 - Event Engine publisher interface
 - integration client interfaces for Numeria Studio, AI Platform Core, SNS Planner, and Stripe
 - mock repository layer for Lead, Customer, Product, Reservation, Payment, and Revenue
@@ -27,6 +28,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - mock idempotency check for Stripe webhook event IDs
 - payment webhook handling that updates Payment, Reservation payment status, and Revenue
 - `ProcessedExternalEvent` domain model for provider-level webhook/event idempotency
+- audit logging for Customer creation, Lead conversion, Reservation creation, Stripe Checkout creation, payment completion, and refund processing
 
 ## Current Scope
 
@@ -48,6 +50,7 @@ The goal of this phase is to define the first code structure and make the core r
 - External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
 - Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
 - API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
+- Audit log entries are stored through a repository-style boundary and avoid unnecessary personal or consultation text in metadata.
 
 ## Next Step
 
@@ -55,7 +58,7 @@ Phase 1 should continue with:
 
 1. replace the demo Workspace context adapter with the production authentication provider
 2. replace mock repositories with persistent database storage
-3. durable audit log storage
+3. replace mock audit log storage with durable database storage
 4. Event Engine transport and retry handling
 5. database-backed idempotent webhook/event consumers
 6. replace Stripe checkout prototypes with live Stripe SDK calls
