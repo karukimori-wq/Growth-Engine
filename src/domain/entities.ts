@@ -124,7 +124,7 @@ export type Reservation = {
   campaignId?: string;
   contentId?: string;
   paymentStatus: "unpaid" | "paid" | "refunded";
-  professionalSessionId?: string;
+  sessionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -135,7 +135,7 @@ export type Followup = {
   leadId?: string;
   customerId?: string;
   reservationId?: string;
-  professionalSessionId?: string;
+  sessionId?: string;
   type:
     | "consultation_followup"
     | "post_session_followup"
