@@ -6,7 +6,9 @@ export type WorkspaceContext = {
   user: User;
 };
 
-export async function resolveWorkspaceContext(): Promise<WorkspaceContext> {
+export async function resolveWorkspaceContext(_request?: Request): Promise<WorkspaceContext> {
+  // Replace this adapter with the production auth provider. Never derive plan,
+  // role, workspace, or user identity from client-controlled request headers.
   return {
     workspace: demoWorkspace,
     user: {
