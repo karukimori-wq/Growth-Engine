@@ -145,6 +145,16 @@ export type Revenue = {
   createdAt: Timestamp;
 };
 
+export type ProcessedExternalEvent = {
+  id: string;
+  workspaceId: string;
+  provider: "stripe" | "line" | "sns_planner" | "numeria" | "ai_platform_core";
+  externalEventId: string;
+  eventType: string;
+  processedAt: Timestamp;
+  createdAt: Timestamp;
+};
+
 export type Reservation = {
   id: string;
   workspaceId: string;
