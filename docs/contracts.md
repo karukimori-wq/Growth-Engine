@@ -33,6 +33,9 @@ Growth Engine owns:
 - campaign intent
 - sales flow state
 - reservation business state
+- Stripe payment state for customer-facing appraisal payments
+- revenue records and sales analysis
+- public site business settings for customer acquisition and booking
 - Business Plan feature rules
 - business workflow decisions
 
@@ -63,6 +66,23 @@ Growth Engine is responsible for:
 
 Professional Studio may keep cached display fields only as temporary or snapshot
 data. Those fields are not canonical.
+
+## MVP Identity Rule
+
+MVP must not introduce `professionalId` as a required identifier.
+
+Use:
+
+- `workspaceId`: the practitioner's business space
+- `userId`: the signed-in practitioner or staff user
+- `ownerUserId`: the Workspace owner
+
+Treat `professionalId` as a future extension for multiple brands, multiple
+practitioners, or richer practitioner profile management.
+
+Growth Engine Customer, Reservation, Payment, Public Site, and Sales records are
+owned by `workspaceId`. Creation and operation audit fields may reference
+`userId` or `ownerUserId`.
 
 ## Shared Terminology
 
@@ -106,6 +126,9 @@ Growth Engine may provide or call these approved operations:
 - `Customer.UpdateStatus`
 - `Reservation.Create`
 - `Reservation.Get`
+- `Payment.CheckoutCreate`
+- `Payment.Get`
+- `Payment.Refund`
 - `Session.Start`
 - `Session.Complete`
 - `Report.Generate`
@@ -131,6 +154,8 @@ Growth Engine may publish:
 - `growth.lead.converted.v1`
 - `growth.reservation.created.v1`
 - `growth.reservation.cancelled.v1`
+- `growth.payment.completed.v1`
+- `growth.payment.refunded.v1`
 
 Growth Engine may consume:
 
@@ -170,6 +195,27 @@ Growth Engine decides:
 SNS Planner turns those inputs into post drafts. Growth Engine must not move
 post text generation details into Growth Engine, and SNS Planner must not decide
 business strategy.
+
+## Payment Boundary
+
+MVP supports Stripe only for customer-facing appraisal payments.
+
+Growth Engine owns:
+
+- Stripe Checkout and Payment Intent creation
+- payment state
+- unpaid, pending, paid, cancelled, failed, and refunded state management
+- reservation-to-payment links
+- customer-to-payment links
+- revenue analysis
+- payment completed and refunded events
+
+Numeria Studio must not own payment methods, payment state, or revenue records.
+It may reference `paymentStatus`, `reservationId`, `customerId`, and product or
+service menu context from Growth Engine to decide whether a Session can start.
+
+Do not implement bank transfer, PayPay, cash, external payment links, Coconala,
+or other payment providers in MVP. Treat them as future extensions.
 
 ## Contract Change Rule
 
