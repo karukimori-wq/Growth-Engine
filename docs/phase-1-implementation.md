@@ -12,6 +12,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - Business Home API prototype
 - SNS Planner content brief API prototype
 - Workspace context resolver
+- request-aware Workspace/User context adapter for production auth integration
 - server-side Business authorization helper
 - audit log interface
 - Event Engine publisher interface
@@ -29,7 +30,7 @@ This repository now includes the first implementation foundation for Growth Engi
 
 ## Current Scope
 
-This is not yet connected to persistent storage, authentication, Numeria Studio, AI Platform Core, SNS Planner, LINE, or live Stripe SDK calls.
+This is not yet connected to persistent storage, production authentication, Numeria Studio, AI Platform Core, SNS Planner, LINE, or live Stripe SDK calls.
 
 The goal of this phase is to define the first code structure and make the core responsibilities visible in code:
 
@@ -46,12 +47,13 @@ The goal of this phase is to define the first code structure and make the core r
 - Payment status is owned by Growth Engine. Numeria Studio should only reference payment state and appraisal start eligibility.
 - External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
 - Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
+- API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
 
 ## Next Step
 
 Phase 1 should continue with:
 
-1. replace the demo Workspace resolver with real authentication
+1. replace the demo Workspace context adapter with the production authentication provider
 2. replace mock repositories with persistent database storage
 3. durable audit log storage
 4. Event Engine transport and retry handling
