@@ -19,7 +19,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const customer = await convertLeadToCustomer(apiContext.workspace.id, lead);
     const event = await publishEvent({
-      eventType: "growth.customer.created.v1",
+      eventType: "growth.lead.converted.v1",
       source: "growth-engine",
       workspaceId: customer.workspaceId,
       payload: { customerId: customer.id, leadId: lead.id }
