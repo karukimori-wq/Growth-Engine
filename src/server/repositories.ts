@@ -1,5 +1,5 @@
-import type { Customer, Lead, Product, Reservation } from "@/domain/entities";
-import { customers, leads, products, todayReservations } from "@/lib/mock-data";
+import type { Customer, Lead, Payment, Product, Reservation, Revenue } from "@/domain/entities";
+import { customers, leads, payments, products, revenues, todayReservations } from "@/lib/mock-data";
 
 function filterByWorkspace<T extends { workspaceId: string }>(records: T[], workspaceId: string): T[] {
   return records.filter((record) => record.workspaceId === workspaceId);
@@ -83,6 +83,61 @@ export async function createReservation(input: Omit<Reservation, "id" | "created
     id: `res_${Date.now()}`,
     createdAt: now,
     updatedAt: now,
+    ...input
+  };
+}
+
+export async function listPayments(workspaceId: string): Promise<Payment[]> {
+  return filterByWorkspace(payments, workspaceId);
+}
+
+export async function findPaymentByStripePaymentIntent(
+  workspaceId: string,
+  stripePaymentIntentId: string
+): Promise<Payment | undefined> {
+  return payments.find(
+    (payment) => payment.workspaceId === workspaceId && payment.stripePaymentIntentId === stripePaymentIntentId
+  );
+}
+
+export async function createPayment(input: Omit<Payment, "id" | "createdAt" | "updatedAt">): Promise<Payment> {
+  const now = new Date().toISOString();
+
+  return {
+    id: `pay_${Date.now()}`,
+    createdAt: now,
+    updatedAt: now,
+    ...input
+  };
+}
+
+export async function markPaymentPaid(payment: Payment, paidAt: string): Promise<Payment> {
+  return {
+    ...payment,
+    paymentStatus: "paid",
+    paidAt,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export async function markPaymentRefunded(
+  payment: Payment,
+  refundStatus: "partial" | "full",
+  refundedAt: string
+): Promise<Payment> {
+  return {
+    ...payment,
+    paymentStatus: "refunded",
+    refundStatus,
+    refundedAt,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export async function createRevenue(input: Omit<Revenue, "id" | "createdAt">): Promise<Revenue> {
+  return {
+    id: `rev_${Date.now()}`,
+    createdAt: new Date().toISOString(),
     ...input
   };
 }
