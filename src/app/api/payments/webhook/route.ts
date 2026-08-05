@@ -10,7 +10,6 @@ import {
   recordProcessedExternalEvent,
   updateReservationPaymentStatus
 } from "@/server/repositories";
-import { demoWorkspace } from "@/lib/mock-data";
 
 export async function POST(request: Request) {
   const stripe = createStripeClient();
@@ -24,12 +23,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid Stripe webhook." }, { status: 400 });
   }
 
-  if (await hasProcessedExternalEvent(demoWorkspace.id, "stripe", event.id)) {
+  if (await hasProcessedExternalEvent(event.workspaceId, "stripe", event.id)) {
     return NextResponse.json({ received: true, ignored: "duplicate_event", eventId: event.id });
   }
 
   if (event.type === "checkout.session.completed") {
-    const payment = await findPaymentByStripePaymentIntent(demoWorkspace.id, event.stripePaymentIntentId);
+    const payment = await findPaymentByStripePaymentIntent(event.workspaceId, event.stripePaymentIntentId);
 
     if (!payment) {
       return NextResponse.json({ received: true, ignored: "payment_not_found", eventId: event.id });
@@ -73,7 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, payment: paidPayment, reservation, revenue });
   }
 
-  const payment = await findPaymentByStripePaymentIntent(demoWorkspace.id, event.stripePaymentIntentId);
+  const payment = await findPaymentByStripePaymentIntent(event.workspaceId, event.stripePaymentIntentId);
 
   if (!payment) {
     return NextResponse.json({ received: true, ignored: "payment_not_found", eventId: event.id });
