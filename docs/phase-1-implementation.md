@@ -19,6 +19,8 @@ This repository now includes the first implementation foundation for Growth Engi
 - mock repository layer for Lead, Customer, Product, and Reservation
 - first Business APIs for leads, customers, products, reservations, and lead conversion
 - database schema draft for persistent storage
+- MVP identity rule: use `workspaceId + userId`, keep `professionalId` as future extension
+- MVP payment rule: Growth Engine owns Stripe-only customer-facing payments
 
 ## Current Scope
 
@@ -34,6 +36,8 @@ The goal of this phase is to define the first code structure and make the core r
 - External contracts use `Report`, `sessionId`, and versioned event names.
 - Growth Engine publishes `growth.*.v1` events and subscribes to formal `studio.*.v1` and `sns.*.v1` events.
 - Customer creation and lead conversion are represented in Growth Engine first, keeping Customer ownership in this repository.
+- Customer, Reservation, Payment, Public Site, and Sales are owned by `workspaceId`; `userId` records the acting practitioner or staff user.
+- `professionalId` is not required in MVP payloads for Growth Engine, Numeria Studio, SNS Planner, or AI Platform Core.
 
 ## Next Step
 
