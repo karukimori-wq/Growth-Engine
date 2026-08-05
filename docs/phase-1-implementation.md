@@ -18,6 +18,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - integration client interfaces for Numeria Studio, AI Platform Core, and SNS Planner
 - mock repository layer for Lead, Customer, Product, and Reservation
 - first Business APIs for leads, customers, products, reservations, and lead conversion
+- database schema draft for persistent storage
 
 ## Current Scope
 
