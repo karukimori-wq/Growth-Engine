@@ -1,112 +1,164 @@
-# Contracts Reference
+# Growth Engine Contracts
 
-Growth Engine follows the shared contracts defined in the Professional Platform Contracts repository.
-
-Source repository:
+Growth Engine adopts the shared contracts from:
 
 - https://github.com/karukimori-wq/professional-platform-contracts
 
-This repository is the implementation repository for Growth Engine. It must not redefine shared platform language independently. Cross-product terms, APIs, events, entity payloads, and ownership rules must use the contracts repository as the source of truth.
+The contracts repository is the source of truth for cross-system terminology,
+ownership, API operation names, event names, and shared schemas. Growth Engine
+must not invent local cross-system contracts.
 
 ## Required References
 
-Read these documents before implementing cross-product behavior:
+Read these files before changing cross-product behavior:
 
-| Contract Document | Purpose |
-| --- | --- |
-| [Platform Boundaries](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/platform-boundaries.md) | Defines what Growth Engine owns and must not own |
-| [Shared Glossary](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/shared-glossary.md) | Defines shared naming across Growth Engine, Professional Studio, SNS Planner, and AI Platform Core |
-| [API Catalog](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/api-catalog.md) | Defines approved synchronous cross-system operations |
-| [Event Catalog](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/event-catalog.md) | Defines approved asynchronous state-change events |
-| [Data Ownership](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/data-ownership.md) | Defines canonical data ownership |
-| [Adoption Guide](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/adoption-guide.md) | Explains how implementation repositories should adopt the contracts |
-| [Contract Change Checklist](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contract-change-checklist.md) | Checklist before changing shared contracts |
+- `docs/contracts/platform-boundaries.md`
+- `docs/contracts/shared-glossary.md`
+- `docs/contracts/api-catalog.md`
+- `docs/contracts/event-catalog.md`
+- `docs/contracts/data-ownership.md`
+- `docs/repositories/growth-engine.md`
+- `docs/repositories/numeria-studio.md`
+- `docs/repositories/sns-planner.md`
+- `docs/adoption-guide.md`
 
-## Growth Engine Ownership
+## Growth Engine Responsibility
 
 Growth Engine owns:
 
 - canonical Customer data
-- Lead data and lead status
+- Lead status and lifecycle
 - acquisition source
-- contact and channel references
+- nurturing status
+- campaign intent
 - sales flow state
 - reservation business state
-- customer nurturing state
-- campaign intent
-- Business plan feature rules
-- next-action suggestions for acquisition, sales, repeat, and referral
+- Business Plan feature rules
+- business workflow decisions
 
-Growth Engine does not own:
+Growth Engine must not own:
 
-- Professional Studio domain calculations
-- Numeria Studio reading, chart, or appraisal logic
-- Report rendering and PDF layout internals
+- Professional Studio appraisal logic
+- Numeria Studio domain calculations
+- Report rendering or PDF layout internals
 - AI Platform Core runtime internals
 - SNS Planner post generation details
 
-## Canonical Customer Rule
+## Customer Source Of Truth
 
-The canonical customer master belongs to Growth Engine.
+The canonical Customer master belongs to Growth Engine.
 
-Professional Studio repositories may reference `customerId` and store domain-specific records, but they must not create a separate customer master.
+Professional Studio repositories, including Numeria Studio, may reference
+`customerId` and store domain-specific Session and Report records. They must not
+create an independent customer master.
 
-Growth Engine may share customer display or contact metadata through approved APIs and events. Sensitive Professional Studio data should only be exchanged through allowlisted fields, tags, categories, aggregated values, or anonymized information.
+Growth Engine is responsible for:
 
-## Naming Rules
+- customer display profile
+- contact references
+- LINE and SNS references
+- lead status
+- acquisition source
+- nurturing status
 
-Use the shared glossary terms consistently:
+Professional Studio may keep cached display fields only as temporary or snapshot
+data. Those fields are not canonical.
 
-| Use | Meaning |
+## Shared Terminology
+
+Use the shared glossary terms:
+
+| Term | Required Meaning |
 | --- | --- |
 | `Customer` | Growth Engine canonical customer |
-| `Lead` | Customer before paid booking or confirmed business relationship |
-| `Session` | Professional Studio work appointment or service session |
-| `Report` | Professional Studio generated appraisal/report deliverable |
+| `Lead` | Customer before paid booking or confirmed relationship |
+| `Session` | Professional service appointment or appraisal session |
+| `Report` | Generated professional deliverable, including appraisal PDFs |
 | `Workspace` | Tenant boundary |
 | `Capability` | AI Platform Core named AI-enabled action |
-| `Activity` | One execution of an AI capability or workflow |
+| `Activity` | One AI capability or workflow execution |
 | `Event` | Versioned state-change notification |
 
-Avoid creating alternative root terms such as `Client` as a database master entity. If `Client` is used in UI copy, it must map back to `Customer` internally.
+External contracts must use `Report`, not `Document`.
 
-Use `Report` for Growth Engine, Event, API, and cross-repository contracts. If another repository keeps `Document` internally for legacy reasons, Growth Engine integration should still use `Report`.
+Approved Professional Studio API names are:
 
-## Approved External Names
+- `Report.Generate`
+- `Report.Preview`
+- `Report.ExportPdf`
 
-Use these approved Professional Studio operation and event names when integrating with Numeria Studio or future studios:
+Approved report event name:
 
+- `studio.report.generated.v1`
+
+Do not use `Document.Generate`, `Document.Preview`, `Document.ExportPdf`, or
+`Document.Generated` in cross-system contracts.
+
+## API Rules
+
+Use APIs for synchronous behavior where the caller needs an immediate result.
+
+Growth Engine may provide or call these approved operations:
+
+- `Customer.Create`
+- `Customer.Get`
+- `Customer.Find`
+- `Customer.UpdateStatus`
+- `Reservation.Create`
+- `Reservation.Get`
 - `Session.Start`
 - `Session.Complete`
 - `Report.Generate`
 - `Report.Preview`
 - `Report.ExportPdf`
+- `ServiceReference.List`
+- `PostDraft.Generate`
+- `PostDraft.Rewrite`
+- `PostTemplate.List`
+- `Activity.Create`
+- `Activity.Get`
+- `Usage.List`
+- `PromptTemplate.Render`
+
+## Event Rules
+
+Use events only for state-change notifications and downstream processing.
+
+Growth Engine may publish:
+
+- `growth.customer.created.v1`
+- `growth.customer.updated.v1`
+- `growth.lead.converted.v1`
+- `growth.reservation.created.v1`
+- `growth.reservation.cancelled.v1`
+
+Growth Engine may consume:
+
 - `studio.session.started.v1`
 - `studio.session.completed.v1`
 - `studio.report.generated.v1`
 - `studio.service_reference.updated.v1`
+- `ai.activity.created.v1`
+- `ai.activity.completed.v1`
+- `ai.activity.failed.v1`
+- `ai.usage.recorded.v1`
+- `sns.post_draft.created.v1`
+- `sns.post_draft.updated.v1`
 
-Do not use these legacy names in cross-system contracts:
+Do not use legacy event names:
 
 - `Session.Started`
 - `Session.Completed`
 - `Document.Generated`
 
-Do not implement `studio.recommendation.created.v1` as a stable event yet. It is pending in the contracts repository.
-
-## API and Event Rule
-
-Use APIs for immediate reads, writes, and UI operations.
-
-Use events for state changes and follow-up processing.
-
-Do not replace API calls with events when the user needs an immediate result. Do not use APIs as the only mechanism when downstream systems must react to a state change.
+`studio.recommendation.created.v1` is Pending in the contracts repository and
+must not be implemented as a stable event.
 
 ## SNS Planner Boundary
 
-Growth Engine decides the business purpose, target audience, offer, and CTA before requesting SNS Planner.
+Growth Engine owns business intent for SNS work.
 
-Growth Engine sends SNS Planner a post creation brief containing:
+Growth Engine decides:
 
 - `purpose`
 - `targetAudience`
@@ -115,22 +167,11 @@ Growth Engine sends SNS Planner a post creation brief containing:
 - `tone`
 - `constraints`
 
-SNS Planner returns post drafts and emits `sns.post_draft.created.v1` or `sns.post_draft.updated.v1` when draft state changes.
+SNS Planner turns those inputs into post drafts. Growth Engine must not move
+post text generation details into Growth Engine, and SNS Planner must not decide
+business strategy.
 
-## Contract Versioning
+## Contract Change Rule
 
-The contracts repository currently defines version `0.1.0`.
-
-Growth Engine implementation should record which contract version it is adopting. Breaking changes in shared ownership, required fields, or event meaning must be handled as major contract changes in the contracts repository first.
-
-## Before Adding Cross-System Code
-
-Before adding cross-system behavior in Growth Engine, check:
-
-1. Does the behavior belong to Growth Engine according to platform boundaries?
-2. Is the shared term already defined in the glossary?
-3. Is there an approved API operation for synchronous behavior?
-4. Is there an approved event for asynchronous state change?
-5. Is the payload covered by a shared schema or allowlist?
-6. Does the implementation avoid copying sensitive Professional Studio data without limits?
-7. If the contract is missing, should the contracts repository be updated before Growth Engine code changes?
+If Growth Engine needs a new shared API, event, field, or ownership rule, update
+`professional-platform-contracts` first or in the same change batch.
