@@ -21,6 +21,7 @@ export type StripeWebhookEvent =
   | {
       id: string;
       type: "checkout.session.completed";
+      workspaceId: string;
       stripeCheckoutSessionId: string;
       stripePaymentIntentId: string;
       amount: number;
@@ -30,6 +31,7 @@ export type StripeWebhookEvent =
   | {
       id: string;
       type: "charge.refunded";
+      workspaceId: string;
       stripePaymentIntentId: string;
       refundStatus: "partial" | "full";
       refundedAt: string;
@@ -105,9 +107,14 @@ export function createStripeClient(): StripeClient {
       const fallbackEventId = `evt_demo_${Date.now()}`;
 
       if (event.type === "checkout.session.completed") {
+        if (!event.workspaceId) {
+          throw new Error("Stripe webhook event is missing workspaceId.");
+        }
+
         return {
           id: event.id ?? fallbackEventId,
           type: event.type,
+          workspaceId: event.workspaceId,
           stripeCheckoutSessionId: event.stripeCheckoutSessionId ?? `cs_demo_${Date.now()}`,
           stripePaymentIntentId: event.stripePaymentIntentId ?? `pi_demo_${Date.now()}`,
           amount: event.amount ?? 0,
@@ -117,9 +124,14 @@ export function createStripeClient(): StripeClient {
       }
 
       if (event.type === "charge.refunded") {
+        if (!event.workspaceId) {
+          throw new Error("Stripe webhook event is missing workspaceId.");
+        }
+
         return {
           id: event.id ?? fallbackEventId,
           type: event.type,
+          workspaceId: event.workspaceId,
           stripePaymentIntentId: event.stripePaymentIntentId ?? `pi_demo_${Date.now()}`,
           refundStatus: event.refundStatus ?? "full",
           refundedAt: event.refundedAt ?? new Date().toISOString()
