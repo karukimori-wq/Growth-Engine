@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSnsPlannerClient } from "@/integrations/sns-planner";
-import { requireBusinessAccess, requireWorkspaceAccess } from "@/server/authz";
+import { apiError, resolveBusinessApiContext } from "@/server/api";
 import { recordAuditLog } from "@/server/audit-log";
-import { resolveWorkspaceContext } from "@/server/workspace";
 
 const contentBriefSchema = z.object({
   workspaceId: z.string(),
@@ -23,7 +22,6 @@ const contentBriefSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const context = await resolveWorkspaceContext();
   const body = await request.json();
   const parsed = contentBriefSchema.safeParse(body);
 
@@ -32,28 +30,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    requireBusinessAccess(context);
-    requireWorkspaceAccess(context, parsed.data.workspaceId);
+    const context = await resolveBusinessApiContext(request, parsed.data.workspaceId);
+    const snsPlanner = createSnsPlannerClient();
+    const draft = await snsPlanner.requestPostDraft(parsed.data);
+
+    await recordAuditLog({
+      workspaceId: context.workspace.id,
+      actorUserId: context.user.id,
+      action: "ContentBrief.Requested",
+      targetType: "snsPlannerDraft",
+      targetId: draft.draftId,
+      metadata: {
+        campaignId: parsed.data.campaignId,
+        channel: parsed.data.channel,
+        purpose: parsed.data.purpose
+      }
+    });
+
+    return NextResponse.json({ ...draft }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Forbidden";
-    return NextResponse.json({ error: message }, { status: 403 });
+    return apiError(error);
   }
-
-  const snsPlanner = createSnsPlannerClient();
-  const draft = await snsPlanner.requestPostDraft(parsed.data);
-
-  await recordAuditLog({
-    workspaceId: context.workspace.id,
-    actorUserId: context.user.id,
-    action: "ContentBrief.Requested",
-    targetType: "snsPlannerDraft",
-    targetId: draft.draftId,
-    metadata: {
-      campaignId: parsed.data.campaignId,
-      channel: parsed.data.channel,
-      purpose: parsed.data.purpose
-    }
-  });
-
-  return NextResponse.json({ ...draft }, { status: 201 });
 }
