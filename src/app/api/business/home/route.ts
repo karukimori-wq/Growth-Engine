@@ -3,8 +3,8 @@ import { insights, todayReservations } from "@/lib/mock-data";
 import { requireBusinessAccess } from "@/server/authz";
 import { resolveWorkspaceContext } from "@/server/workspace";
 
-export async function GET() {
-  const context = await resolveWorkspaceContext();
+export async function GET(request: Request) {
+  const context = await resolveWorkspaceContext(request);
 
   try {
     requireBusinessAccess(context);
