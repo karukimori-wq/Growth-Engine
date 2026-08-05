@@ -31,6 +31,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - MVP payment rule: Growth Engine owns Stripe-only customer-facing payments
 - Stripe Checkout and webhook API prototypes
 - Stripe webhook raw-body parsing and signature verification when `STRIPE_WEBHOOK_SECRET` is configured
+- Stripe webhook workspace resolution from event payloads instead of demo workspace state
 - mock idempotency check for Stripe webhook event IDs
 - payment webhook handling that updates Payment, Reservation payment status, and Revenue
 - `ProcessedExternalEvent` domain model for provider-level webhook/event idempotency
@@ -55,6 +56,7 @@ The goal of this phase is to define the first code structure and make the core r
 - Payment status is owned by Growth Engine. Numeria Studio should only reference payment state and appraisal start eligibility.
 - External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
 - Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
+- Stripe webhook processing requires `workspaceId` in the parsed provider event so payment updates remain Workspace-scoped.
 - API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
 - Business API handlers require an active user before plan and workspace checks.
 - Audit log entries are stored through a repository-style boundary and avoid unnecessary personal or consultation text in metadata.
