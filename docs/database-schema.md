@@ -9,6 +9,7 @@ target for replacing those repositories with database-backed storage.
 
 - Every tenant-owned table includes `workspace_id`.
 - Growth Engine owns canonical Customer records.
+- MVP identity uses `workspace_id + user_id`; `professional_id` is not required.
 - Numeria Studio references `customer_id`, `reservation_id`, `product_id`, and
   `session_id`; it does not own the Customer master.
 - External integration names use `Report`, not `Document`.
@@ -16,6 +17,26 @@ target for replacing those repositories with database-backed storage.
 - Sensitive Professional Studio content is not copied into Growth Engine tables
   unless explicitly allowlisted by contracts.
 - Payment card data is never stored.
+- MVP supports Stripe only for customer-facing appraisal payments.
+- Bank transfer, PayPay, cash, external payment links, Coconala, and other
+  providers are future extensions.
+
+## Identity Rule
+
+MVP does not create or require `professional_id`.
+
+Use:
+
+- `workspace_id`: business space owned by the practitioner
+- `user_id`: signed-in practitioner or staff user
+- `owner_user_id`: Workspace owner
+
+Customer, Reservation, Payment, Public Site, and Sales records are primarily
+owned by `workspace_id`. Creation and audit columns may reference the acting
+`user_id`.
+
+`professional_id` is reserved for future multiple-brand, multiple-practitioner,
+or richer practitioner profile support.
 
 ## Core Tables
 
@@ -139,14 +160,17 @@ target for replacing those repositories with database-backed storage.
 | --- | --- | --- |
 | id | text primary key | |
 | workspace_id | text not null | |
+| created_by_user_id | text not null | Signed-in user who created the checkout |
 | customer_id | text not null | |
 | reservation_id | text | |
 | product_id | text | |
-| provider | text | `stripe` |
-| external_payment_id | text | Provider payment ID |
+| payment_provider | text | `stripe` only in MVP |
+| stripe_payment_intent_id | text | Stripe Payment Intent ID |
+| stripe_checkout_session_id | text | Stripe Checkout Session ID |
 | amount | integer | Minor unit amount |
 | currency | text | |
-| status | text | `pending`, `paid`, `failed`, `refunded` |
+| payment_status | text | `unpaid`, `pending`, `paid`, `cancelled`, `failed`, `refunded` |
+| refund_status | text | `none`, `partial`, `full` |
 | paid_at | timestamptz | |
 | refunded_at | timestamptz | |
 | created_at | timestamptz | |
