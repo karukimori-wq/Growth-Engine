@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createStripeClient } from "@/integrations/stripe";
+import { recordAuditLog } from "@/server/audit-log";
 import {
   createRevenue,
   findPaymentByStripePaymentIntent,
@@ -55,6 +56,19 @@ export async function POST(request: Request) {
       externalEventId: event.id,
       eventType: event.type
     });
+    await recordAuditLog({
+      workspaceId: paidPayment.workspaceId,
+      actorUserId: "system:stripe",
+      action: "Payment.Completed",
+      targetType: "payment",
+      targetId: paidPayment.id,
+      metadata: {
+        stripeEventId: event.id,
+        reservationId: paidPayment.reservationId,
+        customerId: paidPayment.customerId,
+        paymentStatus: paidPayment.paymentStatus
+      }
+    });
 
     return NextResponse.json({ received: true, payment: paidPayment, reservation, revenue });
   }
@@ -76,6 +90,19 @@ export async function POST(request: Request) {
     provider: "stripe",
     externalEventId: event.id,
     eventType: event.type
+  });
+  await recordAuditLog({
+    workspaceId: refundedPayment.workspaceId,
+    actorUserId: "system:stripe",
+    action: "Payment.Refunded",
+    targetType: "payment",
+    targetId: refundedPayment.id,
+    metadata: {
+      stripeEventId: event.id,
+      reservationId: refundedPayment.reservationId,
+      customerId: refundedPayment.customerId,
+      refundStatus: refundedPayment.refundStatus
+    }
   });
 
   return NextResponse.json({ received: true, payment: refundedPayment, reservation });
