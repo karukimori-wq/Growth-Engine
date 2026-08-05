@@ -1,37 +1,29 @@
-# Integration Guide
+# Growth Engine Integration
 
-This document explains how Growth Engine integrates with the other Professional Platform repositories using the shared contracts repository.
-
-Shared contracts source:
+Growth Engine integrates with Numeria Studio, SNS Planner, and AI Platform Core
+through the shared contracts repository:
 
 - https://github.com/karukimori-wq/professional-platform-contracts
 
-Related Growth Engine reference:
-
-- [Contracts Reference](./contracts.md)
-
 ## Integration Principles
 
-Growth Engine coordinates business growth workflows, but it does not absorb the responsibilities of the other systems.
+Use APIs for immediate operations. Use events for completed state-change
+notifications.
 
-| System | Growth Engine Relationship |
-| --- | --- |
-| Professional Studio | Growth Engine provides customer, reservation, sales, and follow-up context |
-| Numeria Studio | Initial Professional Studio implementation connected to Growth Engine |
-| SNS Planner | Growth Engine sends post creation briefs and receives draft status/results |
-| AI Platform Core | Growth Engine delegates AI execution and usage tracking |
-| Event Engine | Growth Engine publishes and subscribes to state-change events |
+Growth Engine remains the business workflow owner. It must not absorb
+Professional Studio domain logic, SNS Planner content generation details, or AI
+Platform Core runtime internals.
 
-## Synchronous API Integration
+## Numeria Studio / Professional Studio
 
-Use APIs when Growth Engine or another system needs an immediate result.
+Growth Engine is the Customer source of truth. Numeria Studio references
+`customerId`.
 
-Approved operation names come from the contracts repository API catalog:
+Growth Engine may call:
 
 - `Customer.Create`
 - `Customer.Get`
 - `Customer.Find`
-- `Customer.UpdateStatus`
 - `Reservation.Create`
 - `Reservation.Get`
 - `Session.Start`
@@ -40,152 +32,117 @@ Approved operation names come from the contracts repository API catalog:
 - `Report.Preview`
 - `Report.ExportPdf`
 - `ServiceReference.List`
-- `PostDraft.Generate`
-- `PostDraft.Rewrite`
-- `PostTemplate.List`
-- `Capability.Register`
-- `Activity.Create`
-- `Activity.Get`
-- `Usage.List`
-- `PromptTemplate.Render`
 
-Product repositories may map these operation names to HTTP routes, RPC calls, server actions, or SDK methods. The operation name should remain stable even if transport changes.
+Numeria Studio may publish:
 
-## Event Integration
+- `studio.session.started.v1`
+- `studio.session.completed.v1`
+- `studio.report.generated.v1`
+- `studio.service_reference.updated.v1`
 
-Use events when a completed state change should notify downstream systems.
+Use `Report` for all external contracts. Do not use `Document` in Growth Engine
+integration naming.
 
-Events must be:
+Growth Engine must not copy unrestricted consultation text, practitioner notes,
+or domain-specific appraisal data for marketing use. Use IDs, tags, categories,
+allowlisted fields, or snapshots where the contracts allow it.
 
-- versioned
-- past tense
-- treated as notifications, not synchronous commands
-- idempotent for consumers
+## SNS Planner
 
-Growth Engine publishes these approved events:
+Growth Engine calls SNS Planner only for post draft creation.
 
-| Event | Purpose |
-| --- | --- |
-| `growth.customer.created.v1` | A canonical customer was created |
-| `growth.customer.updated.v1` | Canonical customer display or contact metadata changed |
-| `growth.lead.converted.v1` | A lead became a client or booked customer |
-| `growth.reservation.created.v1` | A reservation was created |
-| `growth.reservation.cancelled.v1` | A reservation was cancelled |
-
-Growth Engine consumes these approved events:
-
-| Event | Publisher | Purpose |
-| --- | --- | --- |
-| `studio.session.started.v1` | Professional Studio | A professional work session started |
-| `studio.session.completed.v1` | Professional Studio | A professional work session completed |
-| `studio.report.generated.v1` | Professional Studio | A report was generated |
-| `studio.service_reference.updated.v1` | Professional Studio | Sellable service reference changed |
-| `ai.activity.created.v1` | AI Platform Core | AI activity was accepted |
-| `ai.activity.completed.v1` | AI Platform Core | AI activity completed |
-| `ai.activity.failed.v1` | AI Platform Core | AI activity failed |
-| `ai.usage.recorded.v1` | AI Platform Core | AI usage was recorded |
-| `sns.post_draft.created.v1` | SNS Planner | A post draft was created |
-| `sns.post_draft.updated.v1` | SNS Planner | A post draft was updated |
-
-Pending events in the contracts repository must not be treated as stable until approved.
-
-Do not use legacy event names such as `Session.Started`, `Session.Completed`, or `Document.Generated` for cross-system contracts.
-
-## Growth Engine to Numeria Studio
-
-Growth Engine passes business context into Numeria Studio when a user starts or continues professional work.
-
-Minimum context:
-
-- `workspaceId`
-- `customerId`
-- `reservationId`
-- `productId`
-- reservation date/time
-- consultation theme
-- pre-questionnaire reference
-- source channel
-- campaign reference
-- payment status
-
-Numeria Studio should return Professional Studio context through approved APIs and events:
-
-- `sessionId`
-- session status
-- session started/completed timestamps
-- service type
-- concern tags
-- `reportId`
-- report generation status
-- next recommended date when allowed
-- follow-up allowed flag
-- review request allowed flag
-
-Growth Engine must not copy unrestricted reading text, full consultation text, private practitioner notes, or sensitive Professional Studio fields for marketing use.
-
-## Growth Engine to SNS Planner
-
-Growth Engine decides business strategy. SNS Planner creates post drafts.
-
-Growth Engine sends:
+Growth Engine decides and sends:
 
 - `purpose`
 - `targetAudience`
-- topic
-- content type
-- channel
 - `cta`
-- tone
-- constraints
-- source insights
+- `channel`
+- `tone`
+- `constraints`
+- campaign reference
 - due date
 
 SNS Planner returns:
 
 - draft id
-- status
-- channel
-- draft variants
-- published timestamp when available
-- tracking link id when available
+- draft state
+- post content variants
+- hashtags
+- image prompt ideas
+- reel ideas
+- story ideas
 
-Growth Engine must not reimplement SNS Planner's post editor, asset manager, or SNS-specific drafting logic.
+Approved API operations:
 
-## Growth Engine to AI Platform Core
+- `PostDraft.Generate`
+- `PostDraft.Rewrite`
+- `PostTemplate.List`
 
-Growth Engine delegates AI execution to AI Platform Core.
+Approved SNS Planner events:
 
-Growth Engine may request AI support for:
+- `sns.post_draft.created.v1`
+- `sns.post_draft.updated.v1`
 
-- consultation tag trend analysis
-- content topic suggestions
-- follow-up target suggestions
-- funnel bottleneck analysis
-- revenue and product analysis
-- next-action suggestions
+SNS Planner must not decide campaign objectives, target audience, CTA strategy,
+lead nurturing, Business Plan rules, or sales judgement.
 
-Growth Engine owns the business decision and UI confirmation flow. AI Platform Core owns runtime, prompts, tools, workflow execution, activity records, usage, and cost tracking.
+## AI Platform Core
 
-## Data Protection Rules
+Growth Engine delegates AI execution and usage tracking to AI Platform Core.
 
-When integrating with Professional Studio and AI Platform Core:
+Approved API operations:
 
-- use `workspaceId` on all tenant-scoped records
-- verify server-side authorization
-- use allowlisted payload fields
-- prefer tags, categories, aggregated values, and anonymized data
-- do not log sensitive consultation text, payment data, or secrets
-- require user confirmation before AI-suggested external messages or publication actions
+- `Activity.Create`
+- `Activity.Get`
+- `Usage.List`
+- `PromptTemplate.Render`
+- `Capability.Register`
+
+Approved AI events:
+
+- `ai.activity.created.v1`
+- `ai.activity.completed.v1`
+- `ai.activity.failed.v1`
+- `ai.usage.recorded.v1`
+
+AI Platform Core does not decide business workflows. Growth Engine owns the
+decision and user confirmation flow for acquisition, sales, follow-up, and SNS
+strategy.
+
+## Forbidden Legacy Names
+
+Do not introduce these names in cross-system code, payloads, or docs:
+
+- `Session.Started`
+- `Session.Completed`
+- `Document.Generated`
+- `Document.Generate`
+- `Document.Preview`
+- `Document.ExportPdf`
+
+Use instead:
+
+- `studio.session.started.v1`
+- `studio.session.completed.v1`
+- `studio.report.generated.v1`
+- `Report.Generate`
+- `Report.Preview`
+- `Report.ExportPdf`
+
+## Pending Events
+
+`studio.recommendation.created.v1` is Pending in the contracts repository. Growth
+Engine may discuss recommendations internally, but it must not subscribe to or
+publish this event as a stable external contract.
 
 ## Implementation Checklist
 
-Before merging integration code:
+Before merging integration changes:
 
-1. Confirm the operation or event exists in the contracts repository.
-2. Confirm Growth Engine owns the business responsibility.
-3. Confirm the payload uses shared names from the glossary.
-4. Confirm sensitive data is minimized.
-5. Confirm events are idempotent for retry.
-6. Confirm server-side plan checks enforce Business access.
-7. Confirm downstream systems can ignore unknown optional fields safely.
-8. Update `professional-platform-contracts` first if a new shared contract is required.
+- Confirm each operation exists in `docs/contracts/api-catalog.md`.
+- Confirm each event exists in `docs/contracts/event-catalog.md`.
+- Confirm Customer canonical data remains in Growth Engine.
+- Confirm Professional Studio uses `Report`, not `Document`, externally.
+- Confirm SNS Planner receives business intent and does not create it.
+- Confirm AI Platform Core executes capabilities but does not own decisions.
+- Confirm Pending events are not treated as stable.
