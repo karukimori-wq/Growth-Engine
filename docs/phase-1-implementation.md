@@ -17,6 +17,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - audit log interface
 - audit log repository boundary backed by the current mock store
 - Event Engine publisher interface
+- Event Outbox domain model and mock queue for pending/published/failed events
 - integration client interfaces for Numeria Studio, AI Platform Core, SNS Planner, and Stripe
 - mock repository layer for Lead, Customer, Product, Reservation, Payment, and Revenue
 - first Business APIs for leads, customers, products, reservations, lead conversion, Stripe checkout, and Stripe webhooks
@@ -51,6 +52,7 @@ The goal of this phase is to define the first code structure and make the core r
 - Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
 - API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
 - Audit log entries are stored through a repository-style boundary and avoid unnecessary personal or consultation text in metadata.
+- Published Growth events are first recorded in an Outbox boundary so a real Event Engine dispatcher can add durable delivery, retries, and observability later.
 
 ## Next Step
 
@@ -59,7 +61,7 @@ Phase 1 should continue with:
 1. replace the demo Workspace context adapter with the production authentication provider
 2. replace mock repositories with persistent database storage
 3. replace mock audit log storage with durable database storage
-4. Event Engine transport and retry handling
+4. replace the mock Event Outbox with durable Event Engine dispatcher storage, transport, retry handling, and observability
 5. database-backed idempotent webhook/event consumers
 6. replace Stripe checkout prototypes with live Stripe SDK calls
 7. enforce `processed_external_events(workspace_id, provider, external_event_id)` with a database unique constraint

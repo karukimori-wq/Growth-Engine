@@ -1,3 +1,4 @@
+import type { EventSource, PlatformEventType } from "./contracts";
 import type { Plan, ProfessionalStudioType, Role, Timestamp } from "./common";
 
 export type Workspace = {
@@ -179,6 +180,23 @@ export type AuditLogEntry = {
   targetId?: string;
   occurredAt: Timestamp;
   metadata: Record<string, unknown>;
+};
+
+export type EventOutboxStatus = "pending" | "published" | "failed";
+
+export type EventOutboxEntry<TPayload = unknown> = {
+  id: string;
+  workspaceId: string;
+  eventType: PlatformEventType;
+  source: EventSource;
+  payload: TPayload;
+  correlationId?: string;
+  status: EventOutboxStatus;
+  attempts: number;
+  occurredAt: Timestamp;
+  publishedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 };
 
 export type Reservation = {
