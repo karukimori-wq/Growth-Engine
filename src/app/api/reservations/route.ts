@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError, resolveBusinessApiContext } from "@/server/api";
+import { recordAuditLog } from "@/server/audit-log";
 import { publishEvent } from "@/server/events";
 import { createReservation, findCustomer, findProduct, listReservations } from "@/server/repositories";
 
@@ -65,6 +66,19 @@ export async function POST(request: Request) {
         reservationId: reservation.id,
         customerId: reservation.customerId,
         productId: reservation.productId
+      }
+    });
+    await recordAuditLog({
+      workspaceId: reservation.workspaceId,
+      actorUserId: context.user.id,
+      action: "Reservation.Created",
+      targetType: "reservation",
+      targetId: reservation.id,
+      metadata: {
+        operation: "create",
+        customerId: reservation.customerId,
+        productId: reservation.productId,
+        status: reservation.status
       }
     });
 
