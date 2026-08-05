@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { AuthorizationError, requireBusinessAccess, requireWorkspaceAccess } from "./authz";
 import { resolveWorkspaceContext } from "./workspace";
 
-export async function resolveBusinessApiContext(workspaceId?: string) {
-  const context = await resolveWorkspaceContext();
+export async function resolveBusinessApiContext(request?: Request, workspaceId?: string) {
+  const context = await resolveWorkspaceContext(request);
   requireBusinessAccess(context);
 
   if (workspaceId) {
