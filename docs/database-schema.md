@@ -250,7 +250,7 @@ or richer practitioner profile support.
 - `products(workspace_id, active)`
 - `reservations(workspace_id, scheduled_start_at)`
 - `reservations(workspace_id, customer_id)`
-- `payments(workspace_id, status, paid_at)`
+- `payments(workspace_id, payment_status, paid_at)`
 - `revenues(workspace_id, occurred_at)`
 - `revenues(workspace_id, campaign_id)`
 - `revenues(workspace_id, content_id)`
