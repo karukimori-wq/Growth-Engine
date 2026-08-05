@@ -21,6 +21,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - database schema draft for persistent storage
 - MVP identity rule: use `workspaceId + userId`, keep `professionalId` as future extension
 - MVP payment rule: Growth Engine owns Stripe-only customer-facing payments
+- Stripe Checkout and webhook API prototypes
 
 ## Current Scope
 
@@ -48,4 +49,4 @@ Phase 1 should continue with:
 3. durable audit log storage
 4. Event Engine transport and retry handling
 5. idempotent webhook/event consumers
-6. Stripe Checkout and payment webhook handling
+6. replace Stripe prototypes with signed webhook verification and live Stripe SDK calls
