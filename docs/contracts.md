@@ -13,10 +13,13 @@ must not invent local cross-system contracts.
 Read these files before changing cross-product behavior:
 
 - `docs/contracts/platform-boundaries.md`
+- `docs/contracts/app-responsibilities.md`
 - `docs/contracts/shared-glossary.md`
+- `docs/contracts/identity-contract.md`
 - `docs/contracts/api-catalog.md`
 - `docs/contracts/event-catalog.md`
 - `docs/contracts/data-ownership.md`
+- `docs/repositories/platform-admin.md`
 - `docs/repositories/growth-engine.md`
 - `docs/repositories/numeria-studio.md`
 - `docs/repositories/sns-planner.md`
@@ -126,9 +129,6 @@ Growth Engine may provide or call these approved operations:
 - `Customer.UpdateStatus`
 - `Reservation.Create`
 - `Reservation.Get`
-- `Payment.CheckoutCreate`
-- `Payment.Get`
-- `Payment.Refund`
 - `Session.Start`
 - `Session.Complete`
 - `Report.Generate`
@@ -154,8 +154,6 @@ Growth Engine may publish:
 - `growth.lead.converted.v1`
 - `growth.reservation.created.v1`
 - `growth.reservation.cancelled.v1`
-- `growth.payment.completed.v1`
-- `growth.payment.refunded.v1`
 
 Growth Engine may consume:
 
@@ -208,7 +206,11 @@ Growth Engine owns:
 - reservation-to-payment links
 - customer-to-payment links
 - revenue analysis
-- payment completed and refunded events
+
+Payment APIs and payment events are not approved cross-system contracts in the
+latest `api-catalog.md` and `event-catalog.md`. Keep MVP Stripe checkout,
+webhook, payment state, refund state, and revenue handling inside Growth Engine
+until those contracts are explicitly added to professional-platform-contracts.
 
 Numeria Studio must not own payment methods, payment state, or revenue records.
 It may reference `paymentStatus`, `reservationId`, `customerId`, and product or
