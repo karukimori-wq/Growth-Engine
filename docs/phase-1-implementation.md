@@ -20,6 +20,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - Event Outbox domain model and mock queue for pending/published/failed events
 - integration client interfaces for Numeria Studio, AI Platform Core, SNS Planner, and Stripe
 - mock repository layer for Lead, Customer, Product, Reservation, Payment, and Revenue
+- `GrowthRepository` interface boundary for replacing the mock repository with persistent storage
 - first Business APIs for leads, customers, products, reservations, lead conversion, Stripe checkout, and Stripe webhooks
 - database schema draft for persistent storage
 - PostgreSQL-oriented DDL draft for the persistent tables and required indexes
@@ -54,6 +55,7 @@ The goal of this phase is to define the first code structure and make the core r
 - API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
 - Audit log entries are stored through a repository-style boundary and avoid unnecessary personal or consultation text in metadata.
 - Published Growth events are first recorded in an Outbox boundary so a real Event Engine dispatcher can add durable delivery, retries, and observability later.
+- Business API handlers keep using stable repository functions while the implementation now sits behind a `GrowthRepository` boundary.
 
 ## Next Step
 
