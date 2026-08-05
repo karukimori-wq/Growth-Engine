@@ -24,6 +24,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - Stripe Checkout and webhook API prototypes
 - mock idempotency check for Stripe webhook event IDs
 - payment webhook handling that updates Payment, Reservation payment status, Revenue, and payment events
+- `ProcessedExternalEvent` domain model for provider-level webhook/event idempotency
 
 ## Current Scope
 
@@ -42,6 +43,7 @@ The goal of this phase is to define the first code structure and make the core r
 - Customer, Reservation, Payment, Public Site, and Sales are owned by `workspaceId`; `userId` records the acting practitioner or staff user.
 - `professionalId` is not required in MVP payloads for Growth Engine, Numeria Studio, SNS Planner, or AI Platform Core.
 - Payment status is owned by Growth Engine. Numeria Studio should only reference payment state and appraisal start eligibility.
+- External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
 
 ## Next Step
 
@@ -53,4 +55,4 @@ Phase 1 should continue with:
 4. Event Engine transport and retry handling
 5. database-backed idempotent webhook/event consumers
 6. replace Stripe prototypes with signed webhook verification and live Stripe SDK calls
-7. persist processed external webhook event IDs with a unique provider/event ID constraint
+7. enforce `processed_external_events(workspace_id, provider, external_event_id)` with a database unique constraint
