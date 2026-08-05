@@ -2,6 +2,8 @@
 
 This repository now includes the first implementation foundation for Growth Engine.
 
+See [MVP Foundation Checklist](mvp-foundation.md) for the minimum foundation completion criteria.
+
 ## Included
 
 - Next.js App Router project skeleton
@@ -41,6 +43,8 @@ This repository now includes the first implementation foundation for Growth Engi
 ## Current Scope
 
 This is not yet connected to persistent storage, production authentication, Numeria Studio, AI Platform Core, SNS Planner, LINE, or live Stripe SDK calls.
+
+This scope is sufficient for the MVP foundation. The remaining work is production integration and durable implementation behind the existing boundaries.
 
 The goal of this phase is to define the first code structure and make the core responsibilities visible in code:
 
