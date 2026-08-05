@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createStripeClient } from "@/integrations/stripe";
 import { apiError, resolveBusinessApiContext } from "@/server/api";
+import { recordAuditLog } from "@/server/audit-log";
 import { createPayment, findCustomer, findProduct } from "@/server/repositories";
 
 const checkoutSchema = z.object({
@@ -53,6 +54,20 @@ export async function POST(request: Request) {
       currency: context.workspace.currency,
       paymentStatus: "pending",
       refundStatus: "none"
+    });
+    await recordAuditLog({
+      workspaceId: payment.workspaceId,
+      actorUserId: context.user.id,
+      action: "Payment.CheckoutCreated",
+      targetType: "payment",
+      targetId: payment.id,
+      metadata: {
+        operation: "checkout_created",
+        customerId: payment.customerId,
+        reservationId: payment.reservationId,
+        productId: payment.productId,
+        paymentStatus: payment.paymentStatus
+      }
     });
 
     return NextResponse.json({ payment, checkoutUrl: checkout.checkoutUrl }, { status: 201 });
