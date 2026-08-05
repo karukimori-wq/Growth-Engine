@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError, resolveBusinessApiContext } from "@/server/api";
+import { recordAuditLog } from "@/server/audit-log";
 import { publishEvent } from "@/server/events";
 import { createCustomer, listCustomers } from "@/server/repositories";
 
@@ -43,13 +44,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    await resolveBusinessApiContext(request, parsed.data.workspaceId);
+    const context = await resolveBusinessApiContext(request, parsed.data.workspaceId);
     const customer = await createCustomer(parsed.data);
     const event = await publishEvent({
       eventType: "growth.customer.created.v1",
       source: "growth-engine",
       workspaceId: customer.workspaceId,
       payload: { customerId: customer.id, leadId: customer.leadId }
+    });
+    await recordAuditLog({
+      workspaceId: customer.workspaceId,
+      actorUserId: context.user.id,
+      action: "Customer.Created",
+      targetType: "customer",
+      targetId: customer.id,
+      metadata: {
+        operation: "create",
+        leadId: customer.leadId,
+        sourceChannel: customer.sourceChannel
+      }
     });
 
     return NextResponse.json({ customer, event }, { status: 201 });
