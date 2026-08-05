@@ -8,6 +8,8 @@ export type AuditLogRepository = {
   listByWorkspace(workspaceId: string): Promise<AuditLogEntry[]>;
 };
 
+export type AuditLogRepositoryDriver = "mock" | "postgres";
+
 function createMockAuditLogRepository(): AuditLogRepository {
   return {
     async record(input) {
@@ -27,7 +29,21 @@ function createMockAuditLogRepository(): AuditLogRepository {
   };
 }
 
-const auditLogRepository = createMockAuditLogRepository();
+function createPostgresAuditLogRepository(): AuditLogRepository {
+  throw new Error("Postgres AuditLogRepository is not implemented yet.");
+}
+
+export function createAuditLogRepository(driver: AuditLogRepositoryDriver = "mock"): AuditLogRepository {
+  if (driver === "postgres") {
+    return createPostgresAuditLogRepository();
+  }
+
+  return createMockAuditLogRepository();
+}
+
+const auditLogRepository = createAuditLogRepository(
+  (process.env.AUDIT_LOG_REPOSITORY_DRIVER as AuditLogRepositoryDriver | undefined) ?? "mock"
+);
 
 export function getAuditLogRepository(): AuditLogRepository {
   return auditLogRepository;
