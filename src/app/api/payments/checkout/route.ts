@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const context = await resolveBusinessApiContext(parsed.data.workspaceId);
+    const context = await resolveBusinessApiContext(request, parsed.data.workspaceId);
     const customer = await findCustomer(context.workspace.id, parsed.data.customerId);
     const product = await findProduct(context.workspace.id, parsed.data.productId);
 
