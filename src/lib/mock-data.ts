@@ -181,6 +181,8 @@ export const revenues: Revenue[] = [
   }
 ];
 
+export const processedStripeWebhookEventIds: string[] = [];
+
 export const insights: MarketingInsight[] = [
   {
     id: "insight_001",
