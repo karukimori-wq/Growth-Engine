@@ -1,12 +1,12 @@
 # Contracts Reference
 
-Growth Engine must follow the shared contracts defined in the Professional Platform Contracts repository.
+Growth Engine follows the shared contracts defined in the Professional Platform Contracts repository.
 
 Source repository:
 
 - https://github.com/karukimori-wq/professional-platform-contracts
 
-This repository is the implementation repository for Growth Engine. It should not redefine shared platform language independently. When cross-product terms, APIs, events, entity payloads, or ownership rules are needed, use the contracts repository as the source of truth.
+This repository is the implementation repository for Growth Engine. It must not redefine shared platform language independently. Cross-product terms, APIs, events, entity payloads, and ownership rules must use the contracts repository as the source of truth.
 
 ## Required References
 
@@ -18,6 +18,7 @@ Read these documents before implementing cross-product behavior:
 | [Shared Glossary](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/shared-glossary.md) | Defines shared naming across Growth Engine, Professional Studio, SNS Planner, and AI Platform Core |
 | [API Catalog](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/api-catalog.md) | Defines approved synchronous cross-system operations |
 | [Event Catalog](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/event-catalog.md) | Defines approved asynchronous state-change events |
+| [Data Ownership](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contracts/data-ownership.md) | Defines canonical data ownership |
 | [Adoption Guide](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/adoption-guide.md) | Explains how implementation repositories should adopt the contracts |
 | [Contract Change Checklist](https://github.com/karukimori-wq/professional-platform-contracts/blob/main/docs/contract-change-checklist.md) | Checklist before changing shared contracts |
 
@@ -27,6 +28,8 @@ Growth Engine owns:
 
 - canonical Customer data
 - Lead data and lead status
+- acquisition source
+- contact and channel references
 - sales flow state
 - reservation business state
 - customer nurturing state
@@ -37,8 +40,8 @@ Growth Engine owns:
 Growth Engine does not own:
 
 - Professional Studio domain calculations
-- Numeria Studio reading or appraisal logic
-- report rendering internals
+- Numeria Studio reading, chart, or appraisal logic
+- Report rendering and PDF layout internals
 - AI Platform Core runtime internals
 - SNS Planner post generation details
 
@@ -59,13 +62,15 @@ Use the shared glossary terms consistently:
 | `Customer` | Growth Engine canonical customer |
 | `Lead` | Customer before paid booking or confirmed business relationship |
 | `Session` | Professional Studio work appointment or service session |
-| `Report` | Professional Studio generated deliverable |
+| `Report` | Professional Studio generated appraisal/report deliverable |
 | `Workspace` | Tenant boundary |
 | `Capability` | AI Platform Core named AI-enabled action |
 | `Activity` | One execution of an AI capability or workflow |
 | `Event` | Versioned state-change notification |
 
 Avoid creating alternative root terms such as `Client` as a database master entity. If `Client` is used in UI copy, it must map back to `Customer` internally.
+
+Use `Report` for Growth Engine, Event, API, and cross-repository contracts. If another repository keeps `Document` internally for legacy reasons, Growth Engine integration should still use `Report`.
 
 ## API and Event Rule
 
