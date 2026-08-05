@@ -4,10 +4,10 @@ import { publishEvent } from "@/server/events";
 import {
   createRevenue,
   findPaymentByStripePaymentIntent,
-  hasProcessedStripeWebhookEvent,
+  hasProcessedExternalEvent,
   markPaymentPaid,
   markPaymentRefunded,
-  recordProcessedStripeWebhookEvent,
+  recordProcessedExternalEvent,
   updateReservationPaymentStatus
 } from "@/server/repositories";
 import { demoWorkspace } from "@/lib/mock-data";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const stripe = createStripeClient();
   const event = await stripe.parseWebhookEvent(payload);
 
-  if (await hasProcessedStripeWebhookEvent(event.id)) {
+  if (await hasProcessedExternalEvent(demoWorkspace.id, "stripe", event.id)) {
     return NextResponse.json({ received: true, ignored: "duplicate_event", eventId: event.id });
   }
 
@@ -57,7 +57,12 @@ export async function POST(request: Request) {
       }
     });
 
-    await recordProcessedStripeWebhookEvent(event.id);
+    await recordProcessedExternalEvent({
+      workspaceId: paidPayment.workspaceId,
+      provider: "stripe",
+      externalEventId: event.id,
+      eventType: event.type
+    });
 
     return NextResponse.json({ received: true, payment: paidPayment, reservation, revenue, event: publishedEvent });
   }
@@ -86,7 +91,12 @@ export async function POST(request: Request) {
     }
   });
 
-  await recordProcessedStripeWebhookEvent(event.id);
+  await recordProcessedExternalEvent({
+    workspaceId: refundedPayment.workspaceId,
+    provider: "stripe",
+    externalEventId: event.id,
+    eventType: event.type
+  });
 
   return NextResponse.json({ received: true, payment: refundedPayment, reservation, event: publishedEvent });
 }
