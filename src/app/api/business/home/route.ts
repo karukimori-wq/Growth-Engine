@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
-import { demoWorkspace, insights, todayReservations } from "@/lib/mock-data";
-import { canAccessBusiness } from "@/lib/plan";
+import { insights, todayReservations } from "@/lib/mock-data";
+import { requireBusinessAccess } from "@/server/authz";
+import { resolveWorkspaceContext } from "@/server/workspace";
 
-export function GET() {
-  if (!canAccessBusiness(demoWorkspace.plan)) {
-    return NextResponse.json(
-      {
-        error: "Business plan is required."
-      },
-      { status: 403 }
-    );
+export async function GET() {
+  const context = await resolveWorkspaceContext();
+
+  try {
+    requireBusinessAccess(context);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Forbidden";
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   return NextResponse.json({
-    workspace: demoWorkspace,
+    workspace: context.workspace,
     metrics: {
       monthlyRevenue: 186000,
       newCustomers: 12,
