@@ -134,7 +134,7 @@ Growth Engine sends:
 - topic
 - content type
 - channel
-- CTA
+- `cta`
 - tone
 - constraints
 - source insights
