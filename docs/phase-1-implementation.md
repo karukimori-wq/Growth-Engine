@@ -13,7 +13,9 @@ This repository now includes the first implementation foundation for Growth Engi
 - SNS Planner content brief API prototype
 - Workspace context resolver
 - request-aware Workspace/User context adapter for production auth integration
+- `WorkspaceContextProvider` interface boundary for replacing demo identity with production authentication
 - server-side Business authorization helper
+- active user authorization check for Business APIs
 - audit log interface
 - audit log repository boundary backed by the current mock store
 - Event Engine publisher interface
@@ -54,6 +56,7 @@ The goal of this phase is to define the first code structure and make the core r
 - External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
 - Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
 - API handlers resolve `workspaceId`, `userId`, `ownerUserId`, role, and plan through a single context boundary. The current adapter keeps demo data server-side and must not trust client-controlled headers for identity, role, plan, or workspace.
+- Business API handlers require an active user before plan and workspace checks.
 - Audit log entries are stored through a repository-style boundary and avoid unnecessary personal or consultation text in metadata.
 - Published Growth events are first recorded in an Outbox boundary so a real Event Engine dispatcher can add durable delivery, retries, and observability later.
 - Business API handlers keep using stable repository functions while the implementation now sits behind a `GrowthRepository` boundary.
