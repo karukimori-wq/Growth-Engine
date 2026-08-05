@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createStripeClient } from "@/integrations/stripe";
-import { publishEvent } from "@/server/events";
 import {
   createRevenue,
   findPaymentByStripePaymentIntent,
@@ -43,20 +42,6 @@ export async function POST(request: Request) {
       occurredAt: event.paidAt,
       revenueType: "new"
     });
-    const publishedEvent = await publishEvent({
-      eventType: "growth.payment.completed.v1",
-      source: "growth-engine",
-      workspaceId: paidPayment.workspaceId,
-      payload: {
-        paymentId: paidPayment.id,
-        revenueId: revenue.id,
-        customerId: paidPayment.customerId,
-        reservationId: paidPayment.reservationId,
-        amount: paidPayment.amount,
-        currency: paidPayment.currency
-      }
-    });
-
     await recordProcessedExternalEvent({
       workspaceId: paidPayment.workspaceId,
       provider: "stripe",
@@ -64,7 +49,7 @@ export async function POST(request: Request) {
       eventType: event.type
     });
 
-    return NextResponse.json({ received: true, payment: paidPayment, reservation, revenue, event: publishedEvent });
+    return NextResponse.json({ received: true, payment: paidPayment, reservation, revenue });
   }
 
   const payment = await findPaymentByStripePaymentIntent(demoWorkspace.id, event.stripePaymentIntentId);
@@ -79,18 +64,6 @@ export async function POST(request: Request) {
     refundedPayment.reservationId,
     "refunded"
   );
-  const publishedEvent = await publishEvent({
-    eventType: "growth.payment.refunded.v1",
-    source: "growth-engine",
-    workspaceId: refundedPayment.workspaceId,
-    payload: {
-      paymentId: refundedPayment.id,
-      customerId: refundedPayment.customerId,
-      reservationId: refundedPayment.reservationId,
-      refundStatus: refundedPayment.refundStatus
-    }
-  });
-
   await recordProcessedExternalEvent({
     workspaceId: refundedPayment.workspaceId,
     provider: "stripe",
@@ -98,5 +71,5 @@ export async function POST(request: Request) {
     eventType: event.type
   });
 
-  return NextResponse.json({ received: true, payment: refundedPayment, reservation, event: publishedEvent });
+  return NextResponse.json({ received: true, payment: refundedPayment, reservation });
 }
