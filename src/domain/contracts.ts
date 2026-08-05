@@ -14,7 +14,7 @@ export type AiPlatformEventType = "ai.activity.completed.v1";
 export type GrowthEventType =
   | "growth.lead.created.v1"
   | "growth.lead.updated.v1"
-  | "growth.lead.qualified.v1"
+  | "growth.lead.converted.v1"
   | "growth.customer.created.v1"
   | "growth.customer.updated.v1"
   | "growth.campaign.created.v1"
@@ -53,7 +53,7 @@ export type EventEnvelope<TPayload> = {
 export const approvedEventTypes: readonly PlatformEventType[] = [
   "growth.lead.created.v1",
   "growth.lead.updated.v1",
-  "growth.lead.qualified.v1",
+  "growth.lead.converted.v1",
   "growth.customer.created.v1",
   "growth.customer.updated.v1",
   "growth.campaign.created.v1",
