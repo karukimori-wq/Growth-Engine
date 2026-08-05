@@ -17,6 +17,7 @@ export type StripeCheckoutResponse = {
 
 export type StripeWebhookEvent =
   | {
+      id: string;
       type: "checkout.session.completed";
       stripeCheckoutSessionId: string;
       stripePaymentIntentId: string;
@@ -25,6 +26,7 @@ export type StripeWebhookEvent =
       paidAt: string;
     }
   | {
+      id: string;
       type: "charge.refunded";
       stripePaymentIntentId: string;
       refundStatus: "partial" | "full";
@@ -49,9 +51,11 @@ export function createStripeClient(): StripeClient {
     },
     async parseWebhookEvent(payload) {
       const event = payload as Partial<StripeWebhookEvent>;
+      const fallbackEventId = `evt_demo_${Date.now()}`;
 
       if (event.type === "checkout.session.completed") {
         return {
+          id: event.id ?? fallbackEventId,
           type: event.type,
           stripeCheckoutSessionId: event.stripeCheckoutSessionId ?? `cs_demo_${Date.now()}`,
           stripePaymentIntentId: event.stripePaymentIntentId ?? `pi_demo_${Date.now()}`,
@@ -63,6 +67,7 @@ export function createStripeClient(): StripeClient {
 
       if (event.type === "charge.refunded") {
         return {
+          id: event.id ?? fallbackEventId,
           type: event.type,
           stripePaymentIntentId: event.stripePaymentIntentId ?? `pi_demo_${Date.now()}`,
           refundStatus: event.refundStatus ?? "full",
