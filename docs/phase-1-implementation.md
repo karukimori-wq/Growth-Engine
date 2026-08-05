@@ -23,7 +23,7 @@ This repository now includes the first implementation foundation for Growth Engi
 - MVP payment rule: Growth Engine owns Stripe-only customer-facing payments
 - Stripe Checkout and webhook API prototypes
 - mock idempotency check for Stripe webhook event IDs
-- payment webhook handling that updates Payment, Reservation payment status, Revenue, and payment events
+- payment webhook handling that updates Payment, Reservation payment status, and Revenue
 - `ProcessedExternalEvent` domain model for provider-level webhook/event idempotency
 
 ## Current Scope
@@ -38,12 +38,13 @@ The goal of this phase is to define the first code structure and make the core r
 - AI suggestions include evidence and are not auto-executed.
 - SNS Planner integration is represented as a brief request instead of post editing.
 - External contracts use `Report`, `sessionId`, and versioned event names.
-- Growth Engine publishes `growth.*.v1` events and subscribes to formal `studio.*.v1` and `sns.*.v1` events.
+- Growth Engine publishes only event-catalog approved `growth.*.v1` events and subscribes to formal `studio.*.v1`, `sns.*.v1`, and `ai.*.v1` events.
 - Customer creation and lead conversion are represented in Growth Engine first, keeping Customer ownership in this repository.
 - Customer, Reservation, Payment, Public Site, and Sales are owned by `workspaceId`; `userId` records the acting practitioner or staff user.
 - `professionalId` is not required in MVP payloads for Growth Engine, Numeria Studio, SNS Planner, or AI Platform Core.
 - Payment status is owned by Growth Engine. Numeria Studio should only reference payment state and appraisal start eligibility.
 - External webhook/event idempotency is represented with `workspaceId + provider + externalEventId`.
+- Stripe payment APIs and events remain internal until added to the shared API and event catalogs.
 
 ## Next Step
 
