@@ -57,6 +57,12 @@ AUDIT_LOG_REPOSITORY_DRIVER=mock
 EVENT_PUBLISHER_DRIVER=mock
 ```
 
+## Connection Test APIs
+
+- `GET /health`
+- `GET /version`
+- `GET /contracts/status`
+
 ## Core Principles
 
 1. Growth Engine is for owned Professional Studio products.
