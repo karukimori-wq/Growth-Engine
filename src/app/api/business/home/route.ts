@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
-import { demoWorkspace, insights, todayReservations } from "@/lib/mock-data";
-import { canAccessBusiness } from "@/lib/plan";
+import { insights, todayReservations } from "@/lib/mock-data";
+import { apiError, resolveBusinessApiContext } from "@/server/api";
 
-export function GET() {
-  if (!canAccessBusiness(demoWorkspace.plan)) {
-    return NextResponse.json(
-      {
-        error: "Business plan is required."
+export async function GET(request: Request) {
+  try {
+    const context = await resolveBusinessApiContext(request);
+
+    return NextResponse.json({
+      workspace: context.workspace,
+      metrics: {
+        monthlyRevenue: 186000,
+        newCustomers: 12,
+        repeatReservations: 7,
+        openLeads: 3,
+        followupTargets: 4
       },
-      { status: 403 }
-    );
+      todayReservations,
+      insights
+    });
+  } catch (error) {
+    return apiError(error);
   }
-
-  return NextResponse.json({
-    workspace: demoWorkspace,
-    metrics: {
-      monthlyRevenue: 186000,
-      newCustomers: 12,
-      repeatReservations: 7,
-      openLeads: 3,
-      followupTargets: 4
-    },
-    todayReservations,
-    insights
-  });
 }

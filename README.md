@@ -44,6 +44,24 @@ Growth Engine and AI Platform Core are shared foundations. Industry-specific wor
 ## Documentation
 
 - [Growth Engine Requirements v1.0](docs/requirements-v1.0.md)
+- [MVP Foundation Checklist](docs/mvp-foundation.md)
+- [Phase 1 Implementation Notes](docs/phase-1-implementation.md)
+
+## Local Foundation Runtime
+
+Copy `.env.example` for local development defaults. The MVP foundation runs with mock drivers until production authentication, database storage, Event Engine transport, and live Stripe SDK calls are implemented.
+
+```text
+GROWTH_REPOSITORY_DRIVER=mock
+AUDIT_LOG_REPOSITORY_DRIVER=mock
+EVENT_PUBLISHER_DRIVER=mock
+```
+
+## Connection Test APIs
+
+- `GET /health`
+- `GET /version`
+- `GET /contracts/status`
 
 ## Core Principles
 

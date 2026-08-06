@@ -1,3 +1,4 @@
+import type { EventSource, PlatformEventType } from "./contracts";
 import type { Plan, ProfessionalStudioType, Role, Timestamp } from "./common";
 
 export type Workspace = {
@@ -110,6 +111,94 @@ export type Product = {
   updatedAt: Timestamp;
 };
 
+export type Payment = {
+  id: string;
+  workspaceId: string;
+  createdByUserId: string;
+  customerId: string;
+  reservationId?: string;
+  productId?: string;
+  paymentProvider: "stripe";
+  stripePaymentIntentId?: string;
+  stripeCheckoutSessionId?: string;
+  amount: number;
+  currency: string;
+  paymentStatus: "unpaid" | "pending" | "paid" | "cancelled" | "failed" | "refunded";
+  refundStatus: "none" | "partial" | "full";
+  paidAt?: Timestamp;
+  refundedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type Revenue = {
+  id: string;
+  workspaceId: string;
+  paymentId: string;
+  customerId: string;
+  productId?: string;
+  campaignId?: string;
+  contentId?: string;
+  sourceChannel?: string;
+  amount: number;
+  occurredAt: Timestamp;
+  revenueType: "new" | "repeat" | "referral";
+  createdAt: Timestamp;
+};
+
+export type ProcessedExternalEvent = {
+  id: string;
+  workspaceId: string;
+  provider: "stripe" | "line" | "sns_planner" | "numeria" | "ai_platform_core";
+  externalEventId: string;
+  eventType: string;
+  processedAt: Timestamp;
+  createdAt: Timestamp;
+};
+
+export type AuditAction =
+  | "ContentBrief.Requested"
+  | "Customer.Created"
+  | "Customer.Updated"
+  | "Lead.Converted"
+  | "Reservation.Created"
+  | "Reservation.Changed"
+  | "Payment.CheckoutCreated"
+  | "Payment.Completed"
+  | "Payment.Refunded"
+  | "ExternalMessage.Sent"
+  | "AiSuggestion.Executed"
+  | "IntegrationSettings.Changed"
+  | "Data.Deleted";
+
+export type AuditLogEntry = {
+  id: string;
+  workspaceId: string;
+  actorUserId: string;
+  action: AuditAction;
+  targetType: string;
+  targetId?: string;
+  occurredAt: Timestamp;
+  metadata: Record<string, unknown>;
+};
+
+export type EventOutboxStatus = "pending" | "published" | "failed";
+
+export type EventOutboxEntry<TPayload = unknown> = {
+  id: string;
+  workspaceId: string;
+  eventType: PlatformEventType;
+  source: EventSource;
+  payload: TPayload;
+  correlationId?: string;
+  status: EventOutboxStatus;
+  attempts: number;
+  occurredAt: Timestamp;
+  publishedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
 export type Reservation = {
   id: string;
   workspaceId: string;
@@ -124,7 +213,7 @@ export type Reservation = {
   campaignId?: string;
   contentId?: string;
   paymentStatus: "unpaid" | "paid" | "refunded";
-  professionalSessionId?: string;
+  sessionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -135,7 +224,7 @@ export type Followup = {
   leadId?: string;
   customerId?: string;
   reservationId?: string;
-  professionalSessionId?: string;
+  sessionId?: string;
   type:
     | "consultation_followup"
     | "post_session_followup"

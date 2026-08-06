@@ -13,10 +13,13 @@ must not invent local cross-system contracts.
 Read these files before changing cross-product behavior:
 
 - `docs/contracts/platform-boundaries.md`
+- `docs/contracts/app-responsibilities.md`
 - `docs/contracts/shared-glossary.md`
+- `docs/contracts/identity-contract.md`
 - `docs/contracts/api-catalog.md`
 - `docs/contracts/event-catalog.md`
 - `docs/contracts/data-ownership.md`
+- `docs/repositories/platform-admin.md`
 - `docs/repositories/growth-engine.md`
 - `docs/repositories/numeria-studio.md`
 - `docs/repositories/sns-planner.md`
@@ -33,6 +36,9 @@ Growth Engine owns:
 - campaign intent
 - sales flow state
 - reservation business state
+- Stripe payment state for customer-facing appraisal payments
+- revenue records and sales analysis
+- public site business settings for customer acquisition and booking
 - Business Plan feature rules
 - business workflow decisions
 
@@ -63,6 +69,23 @@ Growth Engine is responsible for:
 
 Professional Studio may keep cached display fields only as temporary or snapshot
 data. Those fields are not canonical.
+
+## MVP Identity Rule
+
+MVP must not introduce `professionalId` as a required identifier.
+
+Use:
+
+- `workspaceId`: the practitioner's business space
+- `userId`: the signed-in practitioner or staff user
+- `ownerUserId`: the Workspace owner
+
+Treat `professionalId` as a future extension for multiple brands, multiple
+practitioners, or richer practitioner profile management.
+
+Growth Engine Customer, Reservation, Payment, Public Site, and Sales records are
+owned by `workspaceId`. Creation and operation audit fields may reference
+`userId` or `ownerUserId`.
 
 ## Shared Terminology
 
@@ -170,6 +193,31 @@ Growth Engine decides:
 SNS Planner turns those inputs into post drafts. Growth Engine must not move
 post text generation details into Growth Engine, and SNS Planner must not decide
 business strategy.
+
+## Payment Boundary
+
+MVP supports Stripe only for customer-facing appraisal payments.
+
+Growth Engine owns:
+
+- Stripe Checkout and Payment Intent creation
+- payment state
+- unpaid, pending, paid, cancelled, failed, and refunded state management
+- reservation-to-payment links
+- customer-to-payment links
+- revenue analysis
+
+Payment APIs and payment events are not approved cross-system contracts in the
+latest `api-catalog.md` and `event-catalog.md`. Keep MVP Stripe checkout,
+webhook, payment state, refund state, and revenue handling inside Growth Engine
+until those contracts are explicitly added to professional-platform-contracts.
+
+Numeria Studio must not own payment methods, payment state, or revenue records.
+It may reference `paymentStatus`, `reservationId`, `customerId`, and product or
+service menu context from Growth Engine to decide whether a Session can start.
+
+Do not implement bank transfer, PayPay, cash, external payment links, Coconala,
+or other payment providers in MVP. Treat them as future extensions.
 
 ## Contract Change Rule
 
