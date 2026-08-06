@@ -17,6 +17,7 @@ The MVP foundation is ready when the repository has:
 - repository, audit log, event publisher, workspace context, and Stripe client boundaries
 - PostgreSQL-oriented DDL draft for the durable tables
 - mock drivers as the default local runtime
+- connection test APIs: `GET /health`, `GET /version`, and `GET /contracts/status`
 
 ## Local Runtime Defaults
 
