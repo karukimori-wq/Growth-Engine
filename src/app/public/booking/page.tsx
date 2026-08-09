@@ -8,9 +8,31 @@ export default function PublicBookingPage() {
           このページは鑑定依頼者向けの予約導線です。管理画面、売上、顧客一覧、AI提案には移動できません。
         </p>
         <div className="divider" />
-        <p><strong>鑑定メニュー</strong>: 数秘術ベーシック鑑定</p>
-        <p><strong>予約導線</strong>: フォーム入力、Stripe Checkout連携予定</p>
-        <p className="muted">MVP画面確認では、占い師向け管理画面と一般顧客向け画面の導線分離を確認するための公開ページです。</p>
+        <form action="/api/public/bookings" method="post" className="form-stack">
+          <label className="field-label">
+            表示名
+            <input name="customerDisplayName" placeholder="例: 予約者A" />
+          </label>
+          <label className="field-label">
+            鑑定メニュー
+            <select name="productId" defaultValue="prd_numeria_basic">
+              <option value="prd_numeria_basic">数秘術ベーシック鑑定</option>
+              <option value="prd_numeria_followup">リピート鑑定</option>
+            </select>
+          </label>
+          <label className="field-label">
+            希望日
+            <input name="preferredDate" type="date" required />
+          </label>
+          <label className="field-label">
+            希望時間
+            <input name="preferredTime" type="time" required />
+          </label>
+          <button className="button" type="submit">予約を送信</button>
+        </form>
+        <p className="muted">
+          予約作成時の workspaceId / ownerUserId はGrowth Engine側で紐付けます。一般顧客は管理画面へ移動できません。
+        </p>
       </section>
     </main>
   );
