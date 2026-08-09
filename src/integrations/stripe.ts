@@ -15,6 +15,8 @@ export type StripeCheckoutResponse = {
   stripeCheckoutSessionId: string;
   stripePaymentIntentId: string;
   checkoutUrl: string;
+  mode: "test";
+  cardDataStored: false;
 };
 
 export type StripeWebhookEvent =
@@ -90,7 +92,9 @@ export function createStripeClient(): StripeClient {
       return {
         stripeCheckoutSessionId: `cs_demo_${idSuffix}`,
         stripePaymentIntentId: `pi_demo_${idSuffix}`,
-        checkoutUrl: `https://checkout.stripe.com/c/pay/cs_demo_${idSuffix}?workspace=${request.workspaceId}`
+        checkoutUrl: `https://checkout.stripe.com/c/pay/cs_demo_${idSuffix}?workspace=${request.workspaceId}`,
+        mode: "test",
+        cardDataStored: false
       };
     },
     async parseWebhookEvent(rawBody, signatureHeader) {
