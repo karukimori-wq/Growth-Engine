@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { demoWorkspace } from "@/lib/mock-data";
 import { createStripeClient } from "@/integrations/stripe";
+import { isProductionAuthConfigured } from "@/server/auth-session";
 
 type CheckStatus = "success" | "warning" | "error" | "skipped";
 
@@ -40,11 +41,12 @@ export async function GET() {
     },
     {
       id: "auth.workspace_isolation",
-      status: "warning",
+      status: isProductionAuthConfigured() ? "success" : "error",
       evidence:
-        "src/middleware.ts protects /app/business with demo owner auth; server APIs use resolveBusinessApiContext and requireWorkspaceAccess. Production identity provider is still demo.",
-      issue:
-        "MVP demo auth is implemented, but production auth provider replacement is still required before external pilot."
+        "Production signed-session auth provider protects /app/business; server APIs resolve owner session and requireWorkspaceAccess.",
+      issue: isProductionAuthConfigured()
+        ? null
+        : "GROWTH_ENGINE_AUTH_SECRET and GROWTH_ENGINE_OWNER_ACCESS_CODE must be configured in production."
     }
   ];
   const hasError = checks.some((check) => check.status === "error");
@@ -66,6 +68,8 @@ export async function GET() {
     identity: {
       identityMode: "workspaceId+userId",
       professionalIdRequired: false,
+      authProvider: "growth-engine-signed-session",
+      productionAuthConfigured: isProductionAuthConfigured(),
       demoWorkspaceId: demoWorkspace.id,
       ownerUserId: demoWorkspace.ownerUserId
     },
