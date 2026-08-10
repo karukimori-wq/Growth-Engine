@@ -1,5 +1,5 @@
 type Props = {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -7,6 +7,7 @@ export default async function SignInPage({ searchParams }: Props) {
   const nextPath = params.next?.startsWith("/app/business")
     ? params.next
     : "/app/business";
+  const hasError = params.error === "invalid_access_code";
 
   return (
     <main className="public-page">
@@ -14,11 +15,18 @@ export default async function SignInPage({ searchParams }: Props) {
         <p className="eyebrow">占い師向け</p>
         <h1 className="page-title">Businessにログイン</h1>
         <p className="muted">
-          MVP確認用のデモ認証です。一般顧客向け予約ページとは導線を分離しています。
+          占い師本人だけがBusiness機能に入れるよう、サーバー署名済みsessionを発行します。
         </p>
-        <form action="/api/auth/demo-sign-in" method="post" className="form-stack">
+        <form action="/api/auth/sign-in" method="post" className="form-stack">
           <input type="hidden" name="next" value={nextPath} />
-          <button className="button" type="submit">デモOwnerとして入る</button>
+          <label className="field-label">
+            Owner access code
+            <input name="accessCode" type="password" required />
+          </label>
+          {hasError ? (
+            <p className="muted">access codeが一致しません。</p>
+          ) : null}
+          <button className="button" type="submit">Businessに入る</button>
         </form>
       </section>
     </main>
