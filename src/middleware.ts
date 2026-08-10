@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authSessionCookieName, verifySessionToken } from "@/server/auth-session";
 
-const demoBusinessCookie = "ge_demo_business_user";
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const isBusinessRoute = request.nextUrl.pathname.startsWith("/app/business");
 
   if (!isBusinessRoute) {
     return NextResponse.next();
   }
 
-  const hasDemoBusinessAccess =
-    request.cookies.get(demoBusinessCookie)?.value === "owner";
+  const hasOwnerSession = await verifySessionToken(
+    request.cookies.get(authSessionCookieName)?.value
+  );
 
-  if (hasDemoBusinessAccess) {
+  if (hasOwnerSession) {
     return NextResponse.next();
   }
 
