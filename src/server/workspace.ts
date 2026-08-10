@@ -1,5 +1,6 @@
 import type { User, Workspace } from "@/domain/entities";
 import { demoWorkspace } from "@/lib/mock-data";
+import { authSessionCookieName, getCookieValue, verifySessionToken } from "./auth-session";
 
 export type WorkspaceContext = {
   workspace: Workspace;
@@ -10,20 +11,26 @@ export type WorkspaceContextProvider = {
   resolve(request?: Request): Promise<WorkspaceContext>;
 };
 
-function createDemoWorkspaceContextProvider(): WorkspaceContextProvider {
+function createProductionWorkspaceContextProvider(): WorkspaceContextProvider {
   return {
-    async resolve(_request) {
-      // Replace this provider with the production auth provider. Never derive plan,
-      // role, workspace, or user identity from client-controlled request headers.
+    async resolve(request) {
+      const session = await verifySessionToken(
+        getCookieValue(request, authSessionCookieName)
+      );
+
+      if (!session) {
+        throw new Error("Authenticated owner session is required.");
+      }
+
       return {
         workspace: demoWorkspace,
         user: {
-          id: demoWorkspace.ownerUserId,
-          workspaceId: demoWorkspace.id,
-          name: "Demo Owner",
+          id: session.userId,
+          workspaceId: session.workspaceId,
+          name: "Workspace Owner",
           email: "owner@example.com",
-          role: "owner",
-          status: "active",
+          role: session.role,
+          status: session.status,
           createdAt: demoWorkspace.createdAt,
           updatedAt: demoWorkspace.updatedAt
         }
@@ -32,7 +39,7 @@ function createDemoWorkspaceContextProvider(): WorkspaceContextProvider {
   };
 }
 
-const workspaceContextProvider = createDemoWorkspaceContextProvider();
+const workspaceContextProvider = createProductionWorkspaceContextProvider();
 
 export function getWorkspaceContextProvider(): WorkspaceContextProvider {
   return workspaceContextProvider;
