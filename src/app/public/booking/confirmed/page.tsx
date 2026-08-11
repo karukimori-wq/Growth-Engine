@@ -38,7 +38,7 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
   return (
     <main className="public-page">
       <section className="public-panel">
-        <p className="eyebrow">一般顧客向け</p>
+        <p className="eyebrow">予約完了</p>
         <h1 className="page-title">予約を受け付けました</h1>
         <p className="muted">
           以下の内容で予約を受け付けました。必要に応じて予約番号を控えてください。
@@ -56,7 +56,7 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
           <a className="button" href="/">ホームへ戻る</a>
         </div>
         <p className="muted">
-          占い師側では、ログイン後のBusiness画面から予約一覧を確認できます。
+          予約内容は担当者側で確認されます。この画面から管理画面へは移動できません。
         </p>
       </section>
     </main>
