@@ -53,19 +53,21 @@ export function getFollowupForScreen(followupId: string) {
   return { followup, reservation, customer, product };
 }
 
-export function createNumeriaStartUrl(reservationId: string, customerId: string) {
+export function createNumeriaStartUrl(
+  reservationId: string,
+  customerId: string,
+  workspaceId = demoWorkspace.id,
+  userId = practitionerUserId
+) {
   const params = new URLSearchParams({
-    workspaceId: demoWorkspace.id,
-    userId: practitionerUserId,
-    sourceApp: "growth-engine",
+    workspaceId,
+    userId,
     reservationId,
     customerId,
-    sessionType: "numerology",
-    intent: "start_appraisal_session",
-    returnUrl: `https://growth-engine-ruby-nine.vercel.app/app/business/followups/${mvpFollowupContext.followupId}`
+    intent: "start_appraisal_session"
   });
 
-  return `${numeriaStudioBaseUrl}/app/sessions/start?${params.toString()}`;
+  return `${numeriaStudioBaseUrl}/app/growth/start?${params.toString()}`;
 }
 
 export function createPostDraftBriefUrl(followupId: string) {
