@@ -2,7 +2,7 @@ export type Plan = "free" | "pro" | "business";
 
 export type Role = "owner" | "admin" | "member";
 
-export type ProfessionalStudioType = "numeria" | "fp" | "coach";
+export type ProfessionalStudioType = "numeria" | "velvet" | "fp" | "coach";
 
 export type Timestamp = string;
 
