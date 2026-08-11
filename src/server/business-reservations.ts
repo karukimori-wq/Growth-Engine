@@ -14,13 +14,17 @@ export type BusinessReservationRecord = {
   product?: Product;
 };
 
-export async function listBusinessReservations(workspaceId = demoWorkspace.id): Promise<BusinessReservationRecord[]> {
+export async function listBusinessReservations(
+  workspaceId = demoWorkspace.id,
+  additionalReservations: Reservation[] = []
+): Promise<BusinessReservationRecord[]> {
   const cookieStore = await cookies();
   const cookieReservations = parsePublicReservationsCookie(cookieStore.get(publicReservationsCookieName)?.value)
     .filter((reservation) => reservation.workspaceId === workspaceId);
+  const fallbackReservations = additionalReservations.filter((reservation) => reservation.workspaceId === workspaceId);
   const repositoryReservations = await listReservations(workspaceId);
 
-  return mergeReservations(repositoryReservations, cookieReservations).map((reservation) => ({
+  return mergeReservations(repositoryReservations, cookieReservations, fallbackReservations).map((reservation) => ({
     reservation,
     customer: reservation.customerId
       ? customers.find((customer) => customer.workspaceId === workspaceId && customer.id === reservation.customerId)
@@ -31,9 +35,10 @@ export async function listBusinessReservations(workspaceId = demoWorkspace.id): 
 
 export async function getBusinessReservation(
   reservationId: string,
-  workspaceId = demoWorkspace.id
+  workspaceId = demoWorkspace.id,
+  additionalReservations: Reservation[] = []
 ): Promise<BusinessReservationRecord | undefined> {
-  const reservations = await listBusinessReservations(workspaceId);
+  const reservations = await listBusinessReservations(workspaceId, additionalReservations);
 
   return reservations.find((record) => record.reservation.id === reservationId);
 }
