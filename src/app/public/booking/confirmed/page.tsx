@@ -3,15 +3,9 @@ import { products } from "@/lib/mock-data";
 type Props = {
   searchParams: Promise<{
     reservationId?: string;
-    workspaceId?: string;
-    ownerUserId?: string;
-    customerId?: string;
     productId?: string;
     scheduledStartAt?: string;
     scheduledEndAt?: string;
-    sourceChannel?: string;
-    createdAt?: string;
-    updatedAt?: string;
   }>;
 };
 
@@ -40,21 +34,6 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
   const params = await searchParams;
   const reservationId = params.reservationId ?? "予約番号未取得";
   const product = products.find((item) => item.id === params.productId);
-  const referenceParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (typeof value === "string" && value.length > 0) {
-      referenceParams.set(key, value);
-    }
-  }
-
-  const referenceQuery = referenceParams.toString();
-  const reservationListHref = referenceQuery
-    ? `/app/business/reservations?${referenceQuery}`
-    : "/app/business/reservations";
-  const reservationDetailHref = referenceQuery
-    ? `/app/business/reservations/${reservationId}?${referenceQuery}`
-    : `/app/business/reservations/${reservationId}`;
 
   return (
     <main className="public-page">
@@ -76,14 +55,9 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
         <div className="action-row">
           <a className="button" href="/">ホームへ戻る</a>
         </div>
-        <div className="divider" />
         <p className="muted">
-          占い師はログイン後、Business画面でこの予約を確認できます。一般顧客はBusiness管理画面には入れません。
+          占い師側では、ログイン後のBusiness画面から予約一覧を確認できます。
         </p>
-        <div className="action-row">
-          <a className="button secondary" href={reservationListHref}>占い師用：予約一覧で確認</a>
-          <a className="button secondary" href={reservationDetailHref}>占い師用：この予約を開く</a>
-        </div>
       </section>
     </main>
   );
