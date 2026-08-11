@@ -2,9 +2,20 @@ import { notFound } from "next/navigation";
 import { createNumeriaStartUrl, mvpFollowupContext, practitionerUserId } from "@/lib/screen-flow";
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessReservation } from "@/server/business-reservations";
+import { createReservationFromReference } from "@/server/public-reservation-store";
 
 type Props = {
   params: Promise<{ reservationId: string }>;
+  searchParams: Promise<{
+    workspaceId?: string;
+    customerId?: string;
+    productId?: string;
+    scheduledStartAt?: string;
+    scheduledEndAt?: string;
+    sourceChannel?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
 };
 
 function formatDateTime(value: string) {
@@ -17,9 +28,18 @@ function formatDateTime(value: string) {
   });
 }
 
-export default async function ReservationDetailPage({ params }: Props) {
+export default async function ReservationDetailPage({ params, searchParams }: Props) {
   const { reservationId } = await params;
-  const record = await getBusinessReservation(reservationId, demoWorkspace.id);
+  const query = await searchParams;
+  const fallbackReservation = createReservationFromReference({
+    reservationId,
+    ...query
+  });
+  const record = await getBusinessReservation(
+    reservationId,
+    demoWorkspace.id,
+    fallbackReservation ? [fallbackReservation] : []
+  );
 
   if (!record) {
     notFound();
