@@ -1,4 +1,5 @@
 import { demoWorkspace } from "@/lib/mock-data";
+import { businessMenu, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
 import { createReservationFromReference } from "@/server/public-reservation-store";
 
@@ -27,6 +28,7 @@ function formatTime(value: string) {
 
 export default async function ReservationsPage({ searchParams }: Props) {
   const params = await searchParams;
+  const currentProfessionalApp = getProfessionalApp(demoWorkspace.professionalStudioType);
   const fallbackReservation = createReservationFromReference(params);
   const records = await listBusinessReservations(
     demoWorkspace.id,
@@ -36,13 +38,17 @@ export default async function ReservationsPage({ searchParams }: Props) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <h1 className="brand">Numeria Studio</h1>
+        <h1 className="brand">Growth Engine</h1>
         <nav>
           <div className="nav-group">
+            <p className="nav-title">Professional</p>
+            <a className="nav-link" href={`/app/professional/${currentProfessionalApp.studioKey}`}>{currentProfessionalApp.studioName}</a>
+          </div>
+          <div className="nav-group">
             <p className="nav-title">Business</p>
-            <a className="nav-link" href="/app/business">今日やること</a>
-            <a className="nav-link active" href="/app/business/reservations">予約</a>
-            <a className="nav-link" href="/app/business/post-draft-briefs/new">集客</a>
+            {businessMenu.map((item) => (
+              <a className={item.href === "/app/business/reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+            ))}
           </div>
           <div className="nav-group">
             <p className="nav-title">一般顧客向け</p>
@@ -53,7 +59,7 @@ export default async function ReservationsPage({ searchParams }: Props) {
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Business / 予約</p>
+            <p className="eyebrow">Growth Engine / 予約</p>
             <h2 className="page-title">予約一覧</h2>
           </div>
           <a className="button" href="/public/booking">一般顧客向け予約ページ</a>
