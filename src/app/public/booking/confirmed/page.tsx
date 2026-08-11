@@ -53,10 +53,10 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
           <dd>{formatReservationDateTime(params.scheduledStartAt)}</dd>
         </dl>
         <div className="action-row">
-          <a className="button" href="/">ホームへ戻る</a>
+          <a className="button" href="/app/business">ホームへ戻る</a>
         </div>
         <p className="muted">
-          予約内容は担当者側で確認されます。この画面から管理画面へは移動できません。
+          予約内容は担当者側で確認されます。この画面から管理画面へ進む場合はログインが必要です。
         </p>
       </section>
     </main>
