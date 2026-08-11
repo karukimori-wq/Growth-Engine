@@ -1,4 +1,5 @@
-import { customers, products, todayReservations } from "@/lib/mock-data";
+import { demoWorkspace } from "@/lib/mock-data";
+import { listBusinessReservations } from "@/server/business-reservations";
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString("ja-JP", {
@@ -9,7 +10,9 @@ function formatTime(value: string) {
   });
 }
 
-export default function ReservationsPage() {
+export default async function ReservationsPage() {
+  const records = await listBusinessReservations(demoWorkspace.id);
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -38,16 +41,16 @@ export default function ReservationsPage() {
 
         <section className="card">
           <div className="table-list">
-            {todayReservations.map((reservation) => {
-              const customer = customers.find((item) => item.id === reservation.customerId);
-              const product = products.find((item) => item.id === reservation.productId);
-
+            {records.map(({ reservation, customer, product }) => {
               return (
                 <a className="row-link" href={`/app/business/reservations/${reservation.id}`} key={reservation.id}>
                   <span>
                     <strong>{formatTime(reservation.scheduledStartAt)}</strong>
                     <br />
-                    <span className="muted">{customer?.displayName ?? reservation.customerId} / {product?.name ?? reservation.productId}</span>
+                    <span className="muted">
+                      {customer?.displayName ?? reservation.customerId ?? "公開予約のお客様"} /{" "}
+                      {product?.name ?? reservation.productId}
+                    </span>
                   </span>
                   <span className="badge">詳細</span>
                 </a>
