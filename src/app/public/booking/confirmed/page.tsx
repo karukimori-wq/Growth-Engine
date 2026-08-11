@@ -3,13 +3,34 @@ type Props = {
     reservationId?: string;
     workspaceId?: string;
     ownerUserId?: string;
+    customerId?: string;
+    productId?: string;
+    scheduledStartAt?: string;
+    scheduledEndAt?: string;
+    sourceChannel?: string;
+    createdAt?: string;
+    updatedAt?: string;
   }>;
 };
 
 export default async function BookingConfirmedPage({ searchParams }: Props) {
   const params = await searchParams;
   const reservationId = params.reservationId ?? "reservation_reference_missing";
-  const reservationDetailHref = `/app/business/reservations/${reservationId}`;
+  const referenceParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string" && value.length > 0) {
+      referenceParams.set(key, value);
+    }
+  }
+
+  const referenceQuery = referenceParams.toString();
+  const reservationListHref = referenceQuery
+    ? `/app/business/reservations?${referenceQuery}`
+    : "/app/business/reservations";
+  const reservationDetailHref = referenceQuery
+    ? `/app/business/reservations/${reservationId}?${referenceQuery}`
+    : `/app/business/reservations/${reservationId}`;
 
   return (
     <main className="public-page">
@@ -30,7 +51,7 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
         </dl>
         <div className="action-row">
           <a className="button" href="/public/booking">別の予約をする</a>
-          <a className="button secondary" href="/app/business/reservations">占い師として予約一覧を確認</a>
+          <a className="button secondary" href={reservationListHref}>占い師として予約一覧を確認</a>
           <a className="button secondary" href={reservationDetailHref}>この予約を確認</a>
         </div>
         <p className="muted">
