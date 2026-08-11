@@ -1,3 +1,5 @@
+import { products } from "@/lib/mock-data";
+
 type Props = {
   searchParams: Promise<{
     reservationId?: string;
@@ -13,9 +15,31 @@ type Props = {
   }>;
 };
 
+function formatReservationDateTime(value?: string) {
+  if (!value) {
+    return "未指定";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "未指定";
+  }
+
+  return date.toLocaleString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 export default async function BookingConfirmedPage({ searchParams }: Props) {
   const params = await searchParams;
-  const reservationId = params.reservationId ?? "reservation_reference_missing";
+  const reservationId = params.reservationId ?? "予約番号未取得";
+  const product = products.find((item) => item.id === params.productId);
   const referenceParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -38,25 +62,28 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
         <p className="eyebrow">一般顧客向け</p>
         <h1 className="page-title">予約を受け付けました</h1>
         <p className="muted">
-          予約内容を控えてお待ちください。占い師側ではBusiness画面の予約一覧から確認できます。
+          以下の内容で予約を受け付けました。必要に応じて予約番号を控えてください。
         </p>
         <div className="divider" />
         <dl className="definition-list compact">
-          <dt>reservationId</dt>
+          <dt>予約番号</dt>
           <dd>{reservationId}</dd>
-          <dt>workspaceId</dt>
-          <dd>{params.workspaceId ?? "workspace_reference_missing"}</dd>
-          <dt>ownerUserId</dt>
-          <dd>{params.ownerUserId ?? "owner_reference_missing"}</dd>
+          <dt>鑑定メニュー</dt>
+          <dd>{product?.name ?? "選択した鑑定メニュー"}</dd>
+          <dt>希望日時</dt>
+          <dd>{formatReservationDateTime(params.scheduledStartAt)}</dd>
         </dl>
         <div className="action-row">
-          <a className="button" href="/public/booking">別の予約をする</a>
-          <a className="button secondary" href={reservationListHref}>占い師として予約一覧を確認</a>
-          <a className="button secondary" href={reservationDetailHref}>この予約を確認</a>
+          <a className="button" href="/">ホームへ戻る</a>
         </div>
+        <div className="divider" />
         <p className="muted">
-          予約一覧と予約詳細は占い師ログイン後に表示されます。一般顧客はBusiness管理画面には入れません。
+          占い師はログイン後、Business画面でこの予約を確認できます。一般顧客はBusiness管理画面には入れません。
         </p>
+        <div className="action-row">
+          <a className="button secondary" href={reservationListHref}>占い師用：予約一覧で確認</a>
+          <a className="button secondary" href={reservationDetailHref}>占い師用：この予約を開く</a>
+        </div>
       </section>
     </main>
   );
