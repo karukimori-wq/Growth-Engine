@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createNumeriaStartUrl, mvpFollowupContext, practitionerUserId } from "@/lib/screen-flow";
 import { demoWorkspace } from "@/lib/mock-data";
+import { businessMenu, getBusinessActionForStudio, getProfessionalApp } from "@/lib/professional-app-registry";
 import { getBusinessReservation } from "@/server/business-reservations";
 import { createReservationFromReference } from "@/server/public-reservation-store";
 
@@ -46,40 +47,53 @@ export default async function ReservationDetailPage({ params, searchParams }: Pr
   }
 
   const { reservation, customer, product } = record;
+  const professionalApp = getProfessionalApp(reservation.professionalStudioType);
+  const businessAction = getBusinessActionForStudio(reservation.professionalStudioType);
   const customerId = reservation.customerId ?? "customer_reference_pending";
-  const numeriaStartUrl = createNumeriaStartUrl(
-    reservation.id,
-    customerId,
-    reservation.workspaceId,
-    practitionerUserId
-  );
-  const handoffPayload = {
-    workspaceId: reservation.workspaceId,
-    userId: practitionerUserId,
-    sourceApp: "growth-engine",
-    reservationId: reservation.id,
-    customerRef: { customerId },
-    sessionType: "numerology",
-    intent: "start_appraisal_session"
-  };
+  const actionHref = reservation.professionalStudioType === "numeria"
+    ? createNumeriaStartUrl(reservation.id, customerId, reservation.workspaceId, practitionerUserId)
+    : businessAction.href ?? `/app/professional/${professionalApp.studioKey}`;
+  const handoffPayload = reservation.professionalStudioType === "numeria"
+    ? {
+        workspaceId: reservation.workspaceId,
+        userId: practitionerUserId,
+        sourceApp: "growth-engine",
+        reservationId: reservation.id,
+        customerRef: { customerId },
+        sessionType: "numerology",
+        intent: "start_appraisal_session"
+      }
+    : {
+        workspaceId: reservation.workspaceId,
+        userId: practitionerUserId,
+        sourceApp: "growth-engine",
+        reservationId: reservation.id,
+        customerRef: { customerId },
+        intent: "open_professional_app_context",
+        studioKey: professionalApp.studioKey
+      };
 
   return (
     <div className="shell">
       <aside className="sidebar">
-        <h1 className="brand">Numeria Studio</h1>
+        <h1 className="brand">Growth Engine</h1>
         <nav>
           <div className="nav-group">
+            <p className="nav-title">Professional</p>
+            <a className="nav-link" href={`/app/professional/${professionalApp.studioKey}`}>{professionalApp.studioName}</a>
+          </div>
+          <div className="nav-group">
             <p className="nav-title">Business</p>
-            <a className="nav-link" href="/app/business">今日やること</a>
-            <a className="nav-link active" href="/app/business/reservations">予約</a>
-            <a className="nav-link" href={`/app/business/followups/${mvpFollowupContext.followupId}`}>フォロー</a>
+            {businessMenu.map((item) => (
+              <a className={item.href === "/app/business/reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+            ))}
           </div>
         </nav>
       </aside>
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Business / 予約詳細</p>
+            <p className="eyebrow">Growth Engine / 予約詳細</p>
             <h2 className="page-title">予約詳細</h2>
           </div>
           <a className="button secondary" href="/app/business/reservations">一覧へ戻る</a>
@@ -87,24 +101,25 @@ export default async function ReservationDetailPage({ params, searchParams }: Pr
 
         <section className="grid">
           <div className="card span-8">
-            <h3>鑑定開始に必要な参照情報</h3>
+            <h3>{professionalApp.studioName}へ渡す参照情報</h3>
             <dl className="definition-list">
               <dt>予約ID</dt><dd>{reservation.id}</dd>
               <dt>お客様</dt><dd>{customer?.displayName ?? "公開予約のお客様"}</dd>
               <dt>Customer参照ID</dt><dd>{customerId}</dd>
-              <dt>鑑定メニュー</dt><dd>{product?.name ?? reservation.productId}</dd>
+              <dt>メニュー</dt><dd>{product?.name ?? reservation.productId}</dd>
               <dt>日時</dt><dd>{formatDateTime(reservation.scheduledStartAt)}</dd>
+              <dt>Professional App</dt><dd>{professionalApp.studioName}</dd>
             </dl>
             <div className="action-row">
-              <a className="button" href={numeriaStartUrl}>鑑定を開始</a>
-              <a className="button secondary" href={`/app/business/followups/${mvpFollowupContext.followupId}`}>鑑定後フォローを確認</a>
+              <a className="button" href={actionHref}>{businessAction.label}</a>
+              <a className="button secondary" href={`/app/business/followups/${mvpFollowupContext.followupId}`}>フォローを確認</a>
             </div>
           </div>
 
           <div className="card span-4">
-            <h3>Numeria Studioへ渡す内容</h3>
+            <h3>Professional Appへ渡す内容</h3>
             <pre className="code-block">{JSON.stringify(handoffPayload, null, 2)}</pre>
-            <p className="muted">paymentStatus、売上金額、連絡先、Report本文、全文カルテは送信しません。</p>
+            <p className="muted">paymentStatus、売上金額、連絡先、Report本文、全文カルテ、機密メモは送信しません。</p>
           </div>
         </section>
       </main>
