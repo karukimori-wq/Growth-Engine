@@ -31,7 +31,7 @@ function isPaymentStatus(value: unknown): value is Reservation["paymentStatus"] 
   return value === "unpaid" || value === "paid" || value === "refunded";
 }
 
-function isValidIsoDate(value: string | undefined) {
+function isValidIsoDate(value: string | undefined): value is string {
   return Boolean(value && !Number.isNaN(new Date(value).getTime()));
 }
 
@@ -110,12 +110,14 @@ export function parsePublicReservationsCookie(value: string | undefined): Reserv
 }
 
 export function createReservationFromReference(params: ReservationReferenceParams): Reservation | undefined {
+  const { reservationId, workspaceId, productId, scheduledStartAt, scheduledEndAt } = params;
+
   if (
-    !params.reservationId ||
-    !params.workspaceId ||
-    !params.productId ||
-    !isValidIsoDate(params.scheduledStartAt) ||
-    !isValidIsoDate(params.scheduledEndAt)
+    !reservationId ||
+    !workspaceId ||
+    !productId ||
+    !isValidIsoDate(scheduledStartAt) ||
+    !isValidIsoDate(scheduledEndAt)
   ) {
     return undefined;
   }
@@ -123,13 +125,13 @@ export function createReservationFromReference(params: ReservationReferenceParam
   const now = new Date().toISOString();
 
   return {
-    id: params.reservationId,
-    workspaceId: params.workspaceId,
+    id: reservationId,
+    workspaceId,
     customerId: params.customerId,
-    productId: params.productId,
+    productId,
     professionalStudioType: demoWorkspace.professionalStudioType,
-    scheduledStartAt: params.scheduledStartAt,
-    scheduledEndAt: params.scheduledEndAt,
+    scheduledStartAt,
+    scheduledEndAt,
     status: "requested",
     sourceChannel: params.sourceChannel ?? "public_booking",
     paymentStatus: "unpaid",
