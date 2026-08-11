@@ -3,6 +3,9 @@ import { products } from "@/lib/mock-data";
 type Props = {
   searchParams: Promise<{
     reservationId?: string;
+    workspaceId?: string;
+    ownerUserId?: string;
+    customerId?: string;
     productId?: string;
     scheduledStartAt?: string;
     scheduledEndAt?: string;
@@ -41,9 +44,10 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
         <p className="eyebrow">予約完了</p>
         <h1 className="page-title">予約を受け付けました</h1>
         <p className="muted">
-          以下の内容で予約を受け付けました。必要に応じて予約番号を控えてください。
+          予約内容を控えてお待ちください。
         </p>
         <div className="divider" />
+        <h2>予約内容を控える</h2>
         <dl className="definition-list compact">
           <dt>予約番号</dt>
           <dd>{reservationId}</dd>
@@ -51,12 +55,17 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
           <dd>{product?.name ?? "選択した鑑定メニュー"}</dd>
           <dt>希望日時</dt>
           <dd>{formatReservationDateTime(params.scheduledStartAt)}</dd>
+          <dt>ワークスペースID</dt>
+          <dd>{params.workspaceId ?? "未取得"}</dd>
+          <dt>担当者ID</dt>
+          <dd>{params.ownerUserId ?? "未取得"}</dd>
         </dl>
         <div className="action-row">
-          <a className="button" href="/app/business">ホームへ戻る</a>
+          <a className="button" href="/public/booking">予約ページへ戻る</a>
+          <a className="button secondary" href="/app/business">トップへ戻る</a>
         </div>
         <p className="muted">
-          予約内容は担当者側で確認されます。この画面から管理画面へ進む場合はログインが必要です。
+          管理画面の予約確認は担当者ログイン後に利用できます。
         </p>
       </section>
     </main>
