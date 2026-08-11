@@ -1,5 +1,20 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { listBusinessReservations } from "@/server/business-reservations";
+import { createReservationFromReference } from "@/server/public-reservation-store";
+
+type Props = {
+  searchParams: Promise<{
+    reservationId?: string;
+    workspaceId?: string;
+    customerId?: string;
+    productId?: string;
+    scheduledStartAt?: string;
+    scheduledEndAt?: string;
+    sourceChannel?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+};
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString("ja-JP", {
@@ -10,8 +25,13 @@ function formatTime(value: string) {
   });
 }
 
-export default async function ReservationsPage() {
-  const records = await listBusinessReservations(demoWorkspace.id);
+export default async function ReservationsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const fallbackReservation = createReservationFromReference(params);
+  const records = await listBusinessReservations(
+    demoWorkspace.id,
+    fallbackReservation ? [fallbackReservation] : []
+  );
 
   return (
     <div className="shell">
@@ -42,8 +62,24 @@ export default async function ReservationsPage() {
         <section className="card">
           <div className="table-list">
             {records.map(({ reservation, customer, product }) => {
+              const detailParams = new URLSearchParams({
+                reservationId: reservation.id,
+                workspaceId: reservation.workspaceId,
+                customerId: reservation.customerId ?? "",
+                productId: reservation.productId,
+                scheduledStartAt: reservation.scheduledStartAt,
+                scheduledEndAt: reservation.scheduledEndAt,
+                sourceChannel: reservation.sourceChannel ?? "public_booking",
+                createdAt: reservation.createdAt,
+                updatedAt: reservation.updatedAt
+              });
+
               return (
-                <a className="row-link" href={`/app/business/reservations/${reservation.id}`} key={reservation.id}>
+                <a
+                  className="row-link"
+                  href={`/app/business/reservations/${reservation.id}?${detailParams.toString()}`}
+                  key={reservation.id}
+                >
                   <span>
                     <strong>{formatTime(reservation.scheduledStartAt)}</strong>
                     <br />
