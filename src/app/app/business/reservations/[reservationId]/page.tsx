@@ -1,4 +1,7 @@
-import { createNumeriaStartUrl, getReservationForScreen, mvpFollowupContext } from "@/lib/screen-flow";
+import { notFound } from "next/navigation";
+import { createNumeriaStartUrl, mvpFollowupContext, practitionerUserId } from "@/lib/screen-flow";
+import { demoWorkspace } from "@/lib/mock-data";
+import { getBusinessReservation } from "@/server/business-reservations";
 
 type Props = {
   params: Promise<{ reservationId: string }>;
@@ -16,14 +19,26 @@ function formatDateTime(value: string) {
 
 export default async function ReservationDetailPage({ params }: Props) {
   const { reservationId } = await params;
-  const { reservation, customer, product } = getReservationForScreen(reservationId);
-  const numeriaStartUrl = createNumeriaStartUrl(reservation.id, customer.id);
+  const record = await getBusinessReservation(reservationId, demoWorkspace.id);
+
+  if (!record) {
+    notFound();
+  }
+
+  const { reservation, customer, product } = record;
+  const customerId = reservation.customerId ?? "customer_reference_pending";
+  const numeriaStartUrl = createNumeriaStartUrl(
+    reservation.id,
+    customerId,
+    reservation.workspaceId,
+    practitionerUserId
+  );
   const handoffPayload = {
     workspaceId: reservation.workspaceId,
-    userId: "user_demo_owner",
+    userId: practitionerUserId,
     sourceApp: "growth-engine",
     reservationId: reservation.id,
-    customerRef: { customerId: customer.id },
+    customerRef: { customerId },
     sessionType: "numerology",
     intent: "start_appraisal_session"
   };
@@ -55,9 +70,9 @@ export default async function ReservationDetailPage({ params }: Props) {
             <h3>鑑定開始に必要な参照情報</h3>
             <dl className="definition-list">
               <dt>予約ID</dt><dd>{reservation.id}</dd>
-              <dt>お客様</dt><dd>{customer.displayName}</dd>
-              <dt>Customer参照ID</dt><dd>{customer.id}</dd>
-              <dt>鑑定メニュー</dt><dd>{product.name}</dd>
+              <dt>お客様</dt><dd>{customer?.displayName ?? "公開予約のお客様"}</dd>
+              <dt>Customer参照ID</dt><dd>{customerId}</dd>
+              <dt>鑑定メニュー</dt><dd>{product?.name ?? reservation.productId}</dd>
               <dt>日時</dt><dd>{formatDateTime(reservation.scheduledStartAt)}</dd>
             </dl>
             <div className="action-row">
