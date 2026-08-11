@@ -73,15 +73,9 @@ export async function POST(request: Request) {
   const url = new URL("/public/booking/confirmed", request.url);
 
   url.searchParams.set("reservationId", reservation.id);
-  url.searchParams.set("workspaceId", demoWorkspace.id);
-  url.searchParams.set("ownerUserId", demoWorkspace.ownerUserId);
-  url.searchParams.set("customerId", customerId);
   url.searchParams.set("productId", product.id);
   url.searchParams.set("scheduledStartAt", scheduledStartAt);
   url.searchParams.set("scheduledEndAt", scheduledEndAt);
-  url.searchParams.set("sourceChannel", parsed.data.sourceChannel);
-  url.searchParams.set("createdAt", reservation.createdAt);
-  url.searchParams.set("updatedAt", reservation.updatedAt);
 
   const existingReservations = parsePublicReservationsCookie(
     getCookieValue(request.headers.get("cookie"), publicReservationsCookieName)
