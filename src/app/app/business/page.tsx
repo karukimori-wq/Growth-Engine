@@ -3,7 +3,7 @@ import { createPostDraftBriefUrl, mvpFollowupContext } from "@/lib/screen-flow";
 import { canAccessBusiness } from "@/lib/plan";
 
 const tasks = [
-  { label: "LINE返信が必要な見込み客", value: "3名", href: "/app/business/leads", tone: "warning" },
+  { label: "LINE返信が必要な見込み客", value: "3名", href: "/app/business/prospects", tone: "warning" },
   { label: "本日の予約", value: "2件", href: "/app/business/reservations", tone: "default" },
   { label: "鑑定後フォロー対象", value: "1件", href: `/app/business/followups/${mvpFollowupContext.followupId}`, tone: "default" },
   { label: "SNS Plannerへ送る投稿ブリーフ", value: "1件", href: createPostDraftBriefUrl(mvpFollowupContext.followupId), tone: "default" }
@@ -32,13 +32,13 @@ export default function BusinessHomePage() {
             <p className="nav-title">Professional</p>
             <a className="nav-link" href="/app/business/customers">顧客</a>
             <a className="nav-link" href="/app/business/reservations/res_001">新しい鑑定</a>
-            <a className="nav-link" href="/app/business/followups/followup_res_001_post_session">鑑定履歴</a>
+            <a className="nav-link" href="/app/professional/history">鑑定履歴</a>
           </div>
           <div className="nav-group">
             <p className="nav-title">Business</p>
             <a className="nav-link active" href="/app/business">今日やること</a>
             <a className="nav-link" href="/app/business/post-draft-briefs/new">集客</a>
-            <a className="nav-link" href="/app/business/leads">見込み客</a>
+            <a className="nav-link" href="/app/business/prospects">見込み客</a>
             <a className="nav-link" href="/app/business/reservations">予約</a>
             <a className="nav-link" href="/app/business/sales">売上</a>
             <a className="nav-link" href="/app/business/followups/followup_res_001_post_session">リピート</a>
@@ -46,8 +46,8 @@ export default function BusinessHomePage() {
             <a className="nav-link" href="/app/business/analytics">分析</a>
           </div>
           <div className="nav-group">
-            <p className="nav-title">一般顧客向け</p>
-            <a className="nav-link" href="/public/booking">予約ページ確認</a>
+            <p className="nav-title">管理者向け</p>
+            <a className="nav-link" href="/app/business/reservations">予約確認</a>
           </div>
         </nav>
       </aside>
