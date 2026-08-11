@@ -1,6 +1,9 @@
 import { demoWorkspace, insights, todayReservations } from "@/lib/mock-data";
 import { createPostDraftBriefUrl, mvpFollowupContext } from "@/lib/screen-flow";
+import { businessMenu, getProfessionalApp, professionalApps } from "@/lib/professional-app-registry";
 import { canAccessBusiness } from "@/lib/plan";
+
+const currentProfessionalApp = getProfessionalApp(demoWorkspace.professionalStudioType);
 
 const tasks = [
   { label: "LINE返信が必要な見込み客", value: "3名", href: "/app/business/prospects", tone: "warning" },
@@ -26,24 +29,25 @@ export default function BusinessHomePage() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <h1 className="brand">Numeria Studio</h1>
+        <h1 className="brand">{currentProfessionalApp.studioName}</h1>
         <nav>
           <div className="nav-group">
             <p className="nav-title">Professional</p>
-            <a className="nav-link" href="/app/business/customers">顧客</a>
-            <a className="nav-link" href="/app/business/reservations/res_001">新しい鑑定</a>
-            <a className="nav-link" href="/app/professional/history">鑑定履歴</a>
+            {currentProfessionalApp.professionalMenu.map((item) => (
+              <a className="nav-link" href={item.href} key={item.href}>{item.label}</a>
+            ))}
           </div>
           <div className="nav-group">
             <p className="nav-title">Business</p>
-            <a className="nav-link active" href="/app/business">今日やること</a>
-            <a className="nav-link" href="/app/business/post-draft-briefs/new">集客</a>
-            <a className="nav-link" href="/app/business/prospects">見込み客</a>
-            <a className="nav-link" href="/app/business/reservations">予約</a>
-            <a className="nav-link" href="/app/business/sales">売上</a>
-            <a className="nav-link" href="/app/business/followups/followup_res_001_post_session">リピート</a>
-            <a className="nav-link" href="/app/business/referrals">紹介</a>
-            <a className="nav-link" href="/app/business/analytics">分析</a>
+            {businessMenu.map((item) => (
+              <a className={item.href === "/app/business/today" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+            ))}
+          </div>
+          <div className="nav-group">
+            <p className="nav-title">Professional App</p>
+            {professionalApps.map((item) => (
+              <a className={item.studioKey === currentProfessionalApp.studioKey ? "nav-link active" : "nav-link"} href={`/app/professional/${item.studioKey}`} key={item.studioKey}>{item.studioName}</a>
+            ))}
           </div>
           <div className="nav-group">
             <p className="nav-title">管理者向け</p>
@@ -54,7 +58,7 @@ export default function BusinessHomePage() {
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Businessホーム</p>
+            <p className="eyebrow">Growth Engine / Business共通</p>
             <h2 className="page-title">今日やること</h2>
           </div>
           <span className="badge">Businessプラン</span>
