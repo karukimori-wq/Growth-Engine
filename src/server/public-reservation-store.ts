@@ -1,8 +1,21 @@
 import type { Reservation } from "@/domain/entities";
+import { demoWorkspace } from "@/lib/mock-data";
 
 export const publicReservationsCookieName = "ge_public_reservations";
 
 const maxStoredPublicReservations = 12;
+
+export type ReservationReferenceParams = {
+  reservationId?: string;
+  workspaceId?: string;
+  customerId?: string;
+  productId?: string;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
+  sourceChannel?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 function isReservationStatus(value: unknown): value is Reservation["status"] {
   return (
@@ -16,6 +29,10 @@ function isReservationStatus(value: unknown): value is Reservation["status"] {
 
 function isPaymentStatus(value: unknown): value is Reservation["paymentStatus"] {
   return value === "unpaid" || value === "paid" || value === "refunded";
+}
+
+function isValidIsoDate(value: string | undefined) {
+  return Boolean(value && !Number.isNaN(new Date(value).getTime()));
 }
 
 function toPublicReservationRecord(value: unknown): Reservation | undefined {
@@ -90,6 +107,35 @@ export function parsePublicReservationsCookie(value: string | undefined): Reserv
   } catch {
     return [];
   }
+}
+
+export function createReservationFromReference(params: ReservationReferenceParams): Reservation | undefined {
+  if (
+    !params.reservationId ||
+    !params.workspaceId ||
+    !params.productId ||
+    !isValidIsoDate(params.scheduledStartAt) ||
+    !isValidIsoDate(params.scheduledEndAt)
+  ) {
+    return undefined;
+  }
+
+  const now = new Date().toISOString();
+
+  return {
+    id: params.reservationId,
+    workspaceId: params.workspaceId,
+    customerId: params.customerId,
+    productId: params.productId,
+    professionalStudioType: demoWorkspace.professionalStudioType,
+    scheduledStartAt: params.scheduledStartAt,
+    scheduledEndAt: params.scheduledEndAt,
+    status: "requested",
+    sourceChannel: params.sourceChannel ?? "public_booking",
+    paymentStatus: "unpaid",
+    createdAt: params.createdAt ?? now,
+    updatedAt: params.updatedAt ?? now
+  };
 }
 
 export function serializePublicReservationsCookie(reservations: Reservation[]): string {
