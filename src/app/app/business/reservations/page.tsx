@@ -1,20 +1,11 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { businessMenu, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
-import { createReservationFromReference } from "@/server/public-reservation-store";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{
-    reservationId?: string;
-    workspaceId?: string;
-    customerId?: string;
-    productId?: string;
-    scheduledStartAt?: string;
-    scheduledEndAt?: string;
-    sourceChannel?: string;
-    createdAt?: string;
-    updatedAt?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function formatTime(value: string) {
@@ -26,14 +17,11 @@ function formatTime(value: string) {
   });
 }
 
-export default async function ReservationsPage({ searchParams }: Props) {
-  const params = await searchParams;
+export default async function ReservationsPage({ searchParams: _searchParams }: Props) {
+  await _searchParams;
+
   const currentProfessionalApp = getProfessionalApp(demoWorkspace.professionalStudioType);
-  const fallbackReservation = createReservationFromReference(params);
-  const records = await listBusinessReservations(
-    demoWorkspace.id,
-    fallbackReservation ? [fallbackReservation] : []
-  );
+  const records = await listBusinessReservations(demoWorkspace.id);
 
   return (
     <div className="shell">
@@ -67,37 +55,32 @@ export default async function ReservationsPage({ searchParams }: Props) {
 
         <section className="card">
           <div className="table-list">
-            {records.map(({ reservation, customer, product }) => {
-              const detailParams = new URLSearchParams({
-                reservationId: reservation.id,
-                workspaceId: reservation.workspaceId,
-                customerId: reservation.customerId ?? "",
-                productId: reservation.productId,
-                scheduledStartAt: reservation.scheduledStartAt,
-                scheduledEndAt: reservation.scheduledEndAt,
-                sourceChannel: reservation.sourceChannel ?? "public_booking",
-                createdAt: reservation.createdAt,
-                updatedAt: reservation.updatedAt
-              });
-
-              return (
-                <a
-                  className="row-link"
-                  href={`/app/business/reservations/${reservation.id}?${detailParams.toString()}`}
-                  key={reservation.id}
-                >
-                  <span>
-                    <strong>{formatTime(reservation.scheduledStartAt)}</strong>
-                    <br />
-                    <span className="muted">
-                      {customer?.displayName ?? reservation.customerId ?? "公開予約のお客様"} /{" "}
-                      {product?.name ?? reservation.productId}
-                    </span>
+            {records.length === 0 ? (
+              <div className="row-link">
+                <span>
+                  <strong>予約はまだありません</strong>
+                  <br />
+                  <span className="muted">公開予約ページから作成された予約がここに表示されます。</span>
+                </span>
+              </div>
+            ) : null}
+            {records.map(({ reservation, customer, product }) => (
+              <a
+                className="row-link"
+                href={`/app/business/reservations/${reservation.id}`}
+                key={reservation.id}
+              >
+                <span>
+                  <strong>{formatTime(reservation.scheduledStartAt)}</strong>
+                  <br />
+                  <span className="muted">
+                    {customer?.displayName ?? reservation.customerId ?? "公開予約のお客様"} /{" "}
+                    {product?.name ?? reservation.productId}
                   </span>
-                  <span className="badge">詳細</span>
-                </a>
-              );
-            })}
+                </span>
+                <span className="badge">詳細</span>
+              </a>
+            ))}
           </div>
         </section>
       </main>
