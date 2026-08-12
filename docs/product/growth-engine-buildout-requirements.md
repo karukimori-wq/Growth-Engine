@@ -17,6 +17,81 @@ Growth Engine must not be implemented as a Numeria Studio-only app. It must supp
 
 Future Professional Apps must be addable without rebuilding the Business menu structure.
 
+## Plan Model
+
+Growth Engine capabilities are released through the Professional App subscription plan. Growth Engine is not sold as a standalone product.
+
+The payment capability is not limited to the Business plan. The plan boundary is:
+
+```text
+Pro = 支払いを受け取れる
+Business = 売れる導線を作れる
+```
+
+### Free
+
+Free includes basic Professional App work only.
+
+For Numeria Studio, Free may include basic appraisal creation.
+
+Free must not include payment capability.
+
+### Pro
+
+Pro allows the professional to offer their specialized work as a paid service.
+
+Pro includes:
+
+- Stripe integration
+- payment link creation
+- one-time payments
+- price settings per service menu
+- `paymentStatus` checks
+- paid / unpaid checks
+- simple sales list
+
+Pro does not need to provide a full public growth funnel. The core value is that the professional can receive payment for their service.
+
+### Business
+
+Business builds on Pro payment capability and adds the sales path around it.
+
+Business includes:
+
+- public booking page
+- landing-page-style booking page
+- service menu listing
+- booking form
+- reservation with prepayment
+- customer registration
+- reservation and payment linkage
+- sales analytics
+- customer-level sales
+- repeat guidance
+- follow-up campaigns
+- SNS Planner integration
+- unified management from acquisition to reservation, payment, and repeat use
+
+Business provides the ability to create a sellable flow, not just receive payment.
+
+### Plan Responsibility Rules
+
+Growth Engine remains the canonical owner of:
+
+- Payment
+- `paymentStatus`
+- `salesAmount`
+- Stripe integration
+
+Numeria Studio, Velvet, and future Studio apps must not receive `paymentStatus`, `salesAmount`, or Stripe information unless an explicit shared contract allows it.
+
+Studio apps should receive reference IDs only, such as:
+
+- `workspaceId`
+- `userId`
+- `customerId`
+- `reservationId`
+
 ## Top-Level Menu Model
 
 Growth Engine navigation is divided into two major areas:
@@ -203,7 +278,8 @@ Many screens are not complete yet. When a screen is not implemented, it must sho
 | Business | Reservation detail to Numeria start | MVP implemented | For Numeria, should link to Numeria Studio `/app/growth/start` with reference IDs only. |
 | Business | SNS Planner integration | API test implemented | Post-draft request API is tested. UI is still MVP-level. |
 | Business | AI Platform Core integration | API test implemented | AI Activity test is implemented. Production UI is thin. |
-| Business | Stripe payment | MVP verified | Test-mode Checkout, webhook, and paymentStatus update have been verified. UI is limited. |
+| Pro / Business | Stripe payment | MVP verified | Payment capability belongs to Pro and above. Test-mode Checkout, webhook, and paymentStatus update have been verified. UI is limited. |
+| Business | Public booking with payment flow | MVP partial | Business adds the sellable path around payment: public booking page, LP-style flow, reservation form, prepayment, and follow-up. |
 | Business | 集客 | Placeholder / partial | Has post brief and SNS Planner entry point but is not a full campaign management screen. |
 | Business | 見込み客 | coming_soon | Must not 404. |
 | Business | 売上 | coming_soon | Must not 404. Aggregation UI not implemented. |
@@ -325,6 +401,8 @@ Growth Engine must not perform Velvet's specialized professional work beyond sha
 
 Customer management is canonical in Growth Engine. Studio apps must not keep a separate customer master. Studio apps may store only the required reference IDs and their own professional records.
 
+Payment management is canonical in Growth Engine. `paymentStatus`, `salesAmount`, Stripe payment records, and Stripe integration state must remain in Growth Engine even when a Studio app starts the domain-specific work after payment.
+
 Numeria example:
 
 | Growth Engine owns | Numeria Studio owns |
@@ -421,6 +499,10 @@ The next Growth Engine buildout is not complete until all of the following are t
 - Public booking confirmation does not route users back to the input page when they expect reservation confirmation.
 - Public pages do not expose business/admin-only links.
 - No disallowed fields are sent to Professional Apps.
+- Free does not expose payment capability.
+- Pro exposes Stripe payment, payment links, one-time payments, menu prices, payment status checks, and simple sales list.
+- Business exposes public booking / LP-style booking / prepayment reservation / customer registration / reservation-payment linkage / sales analytics / repeat and follow-up flow.
+- Payment, `paymentStatus`, `salesAmount`, and Stripe integration remain canonical in Growth Engine.
 - Numeria Studio selection displays Numeria-specific Business labels.
 - Velvet selection displays Velvet-specific Business labels.
 - Business capability keys and internal structure remain shared across Studio apps.
