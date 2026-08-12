@@ -1,19 +1,9 @@
-export default function AnalyticsPage() {
-  return (
-    <main className="main">
-      <section className="card">
-        <p className="eyebrow">Business</p>
-        <h1 className="page-title">分析</h1>
-        <dl className="definition-list compact">
-          <dt>status</dt>
-          <dd>coming_soon</dd>
-          <dt>message</dt>
-          <dd>MVPでは準備中です</dd>
-        </dl>
-        <div className="action-row">
-          <a className="button" href="/app/business">ホームへ戻る</a>
-        </div>
-      </section>
-    </main>
-  );
+import { BusinessComingSoon } from "../_components/business-coming-soon";
+
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function AnalyticsPage({ searchParams }: Props) {
+  return <BusinessComingSoon menuKey="analytics" searchParams={await searchParams} />;
 }
