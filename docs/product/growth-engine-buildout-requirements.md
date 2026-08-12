@@ -74,6 +74,62 @@ Business includes:
 
 Business provides the ability to create a sellable flow, not just receive payment.
 
+### Studio-Specific Plan Value
+
+Plan value must be explained in the language of each Professional App. The underlying Growth Engine capabilities can stay shared, but the value proposition must match the Studio app's work.
+
+Numeria Studio:
+
+```text
+Pro = 鑑定を有料提供できる
+Business = 鑑定の予約・決済・リピート導線を作れる
+```
+
+Velvet:
+
+```text
+Pro = 顧客記録・接客メモを高度化し、顧客を忘れず対応できる
+Business = 来店予定・顧客別売上・再来店・紹介・分析を管理し、継続利用につなげる
+```
+
+Velvet is treated as a Professional App for operators who are adults and for store operators. Growth Engine must provide the Business foundation for customer, visit, sales, repeat, and follow-up management. Growth Engine must not own Velvet's domain-specific service records.
+
+Velvet Pro value:
+
+- 顧客を忘れない
+- 接客品質を上げる
+- 個人売上を守る
+
+Velvet Business value:
+
+- 来店を増やす
+- 顧客別売上を把握する
+- 再来店・紹介・連絡施策を仕組み化する
+
+Velvet pricing assumption:
+
+- Pro: 月1万円
+- Business: 月3万円
+
+Velvet Pro-equivalent Growth Engine features:
+
+- payment link / one-time payment
+- simple customer-level sales checks
+- `paymentStatus` checks
+
+Velvet Business-equivalent Growth Engine features:
+
+- customer-level sales
+- visit interval analysis
+- repeat-visit candidate list
+- customers to contact today
+- inactive customer list
+- referrer / referred customer management
+- sales dashboard
+- contact campaign management
+- SNS Planner integration
+- AI next-action suggestions
+
 ### Plan Responsibility Rules
 
 Growth Engine remains the canonical owner of:
@@ -257,6 +313,7 @@ Studio-specific wording examples:
 | Follow-up / Repeat | 次回鑑定案内 / 再相談 | 再来店フォロー / 次回連絡 |
 | Marketing | SNS / LINE集客 | 営業連絡 / 来店促進 |
 | Sales | 鑑定売上 / 顧客別売上 | 来店売上 / 顧客別売上 |
+| Today | 今日やること | 今日やること |
 
 Design principle:
 
@@ -417,15 +474,37 @@ Numeria example:
 
 Velvet example:
 
-| Growth Engine owns | Velvet owns |
-| --- | --- |
-| `customerId` | `visitId` |
-| 来店予定 | visit history |
-| 売上 | service notes |
-| 顧客別売上 | preferences |
-| 次回連絡 | conversation notes |
-| 紹介元 | previous service context |
-| 再来店候補 |  |
+Growth Engine owns:
+
+- `customerId`
+- Lead / Prospect
+- 来店予定
+- Reservation / Visit Schedule
+- Payment
+- Sales
+- 顧客別売上
+- リピート候補
+- 紹介管理
+- 売上分析
+- 来店分析
+- 今日やること
+- 優先対応リスト
+- SNS Planner連携
+- AI提案の業務判断
+- 次回連絡
+- 紹介元
+- 再来店候補
+
+Velvet owns:
+
+- `visitId`
+- 来店履歴の専門記録
+- 接客メモ
+- 好み
+- 注意点
+- 会話メモ
+- 前回対応内容
+- 顧客ごとの専門タイムライン
 
 ## Data Safety
 
@@ -503,6 +582,11 @@ The next Growth Engine buildout is not complete until all of the following are t
 - Pro exposes Stripe payment, payment links, one-time payments, menu prices, payment status checks, and simple sales list.
 - Business exposes public booking / LP-style booking / prepayment reservation / customer registration / reservation-payment linkage / sales analytics / repeat and follow-up flow.
 - Payment, `paymentStatus`, `salesAmount`, and Stripe integration remain canonical in Growth Engine.
+- Velvet Pro / Business differentiation is documented.
+- Velvet Business labels switch when `studioKey=velvet`.
+- Customer, Sales, Payment, and Visit Schedule / Reservation remain canonical in Growth Engine for Velvet.
+- Velvet receives only required reference IDs from Growth Engine.
+- Velvet-specific service notes, visit history, and customer professional timeline remain owned by Velvet.
 - Numeria Studio selection displays Numeria-specific Business labels.
 - Velvet selection displays Velvet-specific Business labels.
 - Business capability keys and internal structure remain shared across Studio apps.
