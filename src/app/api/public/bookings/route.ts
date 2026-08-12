@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { demoWorkspace, products } from "@/lib/mock-data";
-import {
-  getCookieValue,
-  mergeReservations,
-  parsePublicReservationsCookie,
-  publicReservationsCookieName,
-  serializePublicReservationsCookie
-} from "@/server/public-reservation-store";
 import { createReservation } from "@/server/repositories";
 
 const publicBookingSchema = z.object({
@@ -83,22 +76,5 @@ export async function POST(request: Request) {
   url.searchParams.set("createdAt", reservation.createdAt);
   url.searchParams.set("updatedAt", reservation.updatedAt);
 
-  const existingReservations = parsePublicReservationsCookie(
-    getCookieValue(request.headers.get("cookie"), publicReservationsCookieName)
-  );
-  const response = NextResponse.redirect(url, 303);
-
-  response.cookies.set(
-    publicReservationsCookieName,
-    serializePublicReservationsCookie(mergeReservations(existingReservations, [reservation])),
-    {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-      sameSite: "lax",
-      secure: true
-    }
-  );
-
-  return response;
+  return NextResponse.redirect(url, 303);
 }
