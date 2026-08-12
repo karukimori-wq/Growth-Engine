@@ -299,7 +299,26 @@ function createPostgresGrowthRepository(): GrowthRepository {
   };
 }
 
-export function createGrowthRepository(driver: GrowthRepositoryDriver = "mock"): GrowthRepository {
+function hasPostgresEnvironment() {
+  return Boolean(
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.DATABASE_URL
+  );
+}
+
+function resolveGrowthRepositoryDriver(): GrowthRepositoryDriver {
+  const configuredDriver = process.env.GROWTH_REPOSITORY_DRIVER as GrowthRepositoryDriver | undefined;
+
+  if (configuredDriver) {
+    return configuredDriver;
+  }
+
+  return hasPostgresEnvironment() ? "postgres" : "mock";
+}
+
+export function createGrowthRepository(driver: GrowthRepositoryDriver = resolveGrowthRepositoryDriver()): GrowthRepository {
   if (driver === "postgres") {
     return createPostgresGrowthRepository();
   }
@@ -307,9 +326,7 @@ export function createGrowthRepository(driver: GrowthRepositoryDriver = "mock"):
   return createMockGrowthRepository();
 }
 
-const growthRepository = createGrowthRepository(
-  (process.env.GROWTH_REPOSITORY_DRIVER as GrowthRepositoryDriver | undefined) ?? "mock"
-);
+const growthRepository = createGrowthRepository();
 
 export function getGrowthRepository(): GrowthRepository {
   return growthRepository;
