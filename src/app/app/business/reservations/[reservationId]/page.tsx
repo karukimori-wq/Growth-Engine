@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createNumeriaStartUrl, mvpFollowupContext, practitionerUserId } from "@/lib/screen-flow";
 import { demoWorkspace } from "@/lib/mock-data";
-import { businessMenu, getBusinessActionForStudio, getProfessionalApp } from "@/lib/professional-app-registry";
+import { getBusinessActionForStudio, getBusinessMenu, getBusinessMenuLabel, getProfessionalApp } from "@/lib/professional-app-registry";
 import { getBusinessReservation } from "@/server/business-reservations";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,8 @@ export default async function ReservationDetailPage({ params }: Props) {
 
   const { reservation, customer, product } = record;
   const professionalApp = getProfessionalApp(reservation.professionalStudioType);
+  const businessMenu = getBusinessMenu(professionalApp.studioKey);
+  const reservationLabel = getBusinessMenuLabel("reservations", professionalApp.studioKey);
   const businessAction = getBusinessActionForStudio(reservation.professionalStudioType);
   const customerId = reservation.customerId ?? "customer_reference_pending";
   const actionHref = reservation.professionalStudioType === "numeria"
@@ -48,10 +50,9 @@ export default async function ReservationDetailPage({ params }: Props) {
         workspaceId: reservation.workspaceId,
         userId: practitionerUserId,
         sourceApp: "growth-engine",
-        reservationId: reservation.id,
+        visitScheduleId: reservation.id,
         customerRef: { customerId },
-        intent: "open_professional_app_context",
-        studioKey: professionalApp.studioKey
+        intent: "open_visit_record_context"
       };
 
   return (
@@ -66,7 +67,7 @@ export default async function ReservationDetailPage({ params }: Props) {
           <div className="nav-group">
             <p className="nav-title">Business</p>
             {businessMenu.map((item) => (
-              <a className={item.href === "/app/business/reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+              <a className={item.key === "reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
             ))}
           </div>
         </nav>
@@ -74,10 +75,10 @@ export default async function ReservationDetailPage({ params }: Props) {
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Growth Engine / 予約詳細</p>
-            <h2 className="page-title">予約詳細</h2>
+            <p className="eyebrow">Growth Engine / {reservationLabel}詳細</p>
+            <h2 className="page-title">{reservationLabel}詳細</h2>
           </div>
-          <a className="button secondary" href="/app/business/reservations">一覧へ戻る</a>
+          <a className="button secondary" href={`/app/business/reservations?studioKey=${professionalApp.studioKey}`}>一覧へ戻る</a>
         </header>
 
         <section className="grid">
@@ -100,7 +101,7 @@ export default async function ReservationDetailPage({ params }: Props) {
           <div className="card span-4">
             <h3>Professional Appへ渡す内容</h3>
             <pre className="code-block">{JSON.stringify(handoffPayload, null, 2)}</pre>
-            <p className="muted">paymentStatus、売上金額、連絡先、Report本文、全文カルテ、機密メモは送信しません。</p>
+            <p className="muted">paymentStatus、salesAmount、Stripe情報、顧客マスター全文、機密メモ全文、売上正本、支払い正本は送信しません。</p>
           </div>
         </section>
       </main>
