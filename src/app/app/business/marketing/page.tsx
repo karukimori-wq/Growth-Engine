@@ -1,20 +1,18 @@
-export default function MarketingPage() {
+import { BusinessComingSoon } from "../_components/business-coming-soon";
+
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function MarketingPage({ searchParams }: Props) {
   return (
-    <main className="main">
-      <section className="card">
-        <p className="eyebrow">Business</p>
-        <h1 className="page-title">集客</h1>
-        <dl className="definition-list compact">
-          <dt>status</dt>
-          <dd>coming_soon</dd>
-          <dt>message</dt>
-          <dd>MVPでは準備中です</dd>
-        </dl>
-        <div className="action-row">
-          <a className="button" href="/app/business/post-draft-briefs/new">投稿案を依頼する</a>
-          <a className="button secondary" href="/app/business">ホームへ戻る</a>
-        </div>
-      </section>
-    </main>
+    <BusinessComingSoon
+      menuKey="marketing"
+      searchParams={await searchParams}
+      primaryAction={{
+        label: "投稿案を依頼する",
+        href: "/app/business/post-draft-briefs/new"
+      }}
+    />
   );
 }
