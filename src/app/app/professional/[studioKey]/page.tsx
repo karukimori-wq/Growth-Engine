@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { businessMenu, getProfessionalApp, professionalApps } from "@/lib/professional-app-registry";
+import { getBusinessMenu, getProfessionalApp, professionalApps } from "@/lib/professional-app-registry";
 
 type Props = {
   params: Promise<{ studioKey: string }>;
@@ -8,6 +8,7 @@ type Props = {
 export default async function ProfessionalAppHomePage({ params }: Props) {
   const { studioKey } = await params;
   const app = getProfessionalApp(studioKey);
+  const businessMenu = getBusinessMenu(app.studioKey);
 
   if (app.studioKey !== studioKey) {
     notFound();
@@ -27,7 +28,7 @@ export default async function ProfessionalAppHomePage({ params }: Props) {
           <div className="nav-group">
             <p className="nav-title">Business</p>
             {businessMenu.map((item) => (
-              <a className={item.href === "/app/business/today" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+              <a className={item.key === "today" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
             ))}
           </div>
           <div className="nav-group">
@@ -48,7 +49,7 @@ export default async function ProfessionalAppHomePage({ params }: Props) {
             <p className="eyebrow">Professional App Home + Business Menu</p>
             <h2 className="page-title">{app.studioName}</h2>
           </div>
-          <a className="button secondary" href="/app/business">Businessホーム</a>
+          <a className="button secondary" href={`/app/business?studioKey=${app.studioKey}`}>Businessホーム</a>
         </header>
 
         <section className="grid">
