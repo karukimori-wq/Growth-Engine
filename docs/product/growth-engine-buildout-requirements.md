@@ -182,13 +182,56 @@ Recommended app registry shape:
 type ProfessionalApp = {
   studioKey: string
   studioName: string
+  appType: 'professional'
+  domain: string
+  target: string
   professionalMenu: Array<{
+    key: string
     label: string
     href: string
     status?: 'ready' | 'mvp' | 'coming_soon'
   }>
+  professionalResponsibilities: string[]
+  growthEngineResponsibilities: string[]
+  handoffToStudioFields: string[]
+  handoffFromStudioFields: string[]
+  deniedStudioFields: string[]
 }
 ```
+
+Velvet must be registered as a separate Professional App, not as a Numeria Studio feature:
+
+```json
+{
+  "studioKey": "velvet",
+  "studioName": "Velvet",
+  "appType": "professional",
+  "domain": "professional-memory / visit-records",
+  "target": "成人の事業者・店舗運営者向けの業務管理"
+}
+```
+
+Velvet owns the Professional records for visit history, service notes, preferences, cautions, conversation notes, previous service context, professional timeline, quick customer card, and Recall UI.
+
+Growth Engine owns the Business records for Customer, Lead / Prospect, Visit Schedule / Reservation, Payment, Sales, `paymentStatus`, `salesAmount`, customer-level sales, repeat candidates, referral, and analytics.
+
+Growth Engine may send only these fields to Velvet unless a shared contract expands the surface:
+
+- `workspaceId`
+- `userId`
+- `customerId`
+- `reservationId` or `visitScheduleId`
+- `intent`
+
+Velvet may return only reference fields such as:
+
+- `visitId`
+- `noteId`
+- `lastVisitAt`
+- `nextActionRef`
+- `summaryRef`
+
+Growth Engine must not send `paymentStatus`, `salesAmount`, Stripe information, full customer master data, full confidential notes, Sales source-of-truth records, or Payment source-of-truth records to Velvet.
 
 ### Professional Menu Definitions
 
