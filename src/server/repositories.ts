@@ -8,6 +8,12 @@ import {
   revenues,
   todayReservations
 } from "@/lib/mock-data";
+import {
+  createPostgresReservation,
+  findPostgresReservation,
+  listPostgresReservations,
+  updatePostgresReservationPaymentStatus
+} from "@/server/postgres-reservation-repository";
 
 export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
 export type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
@@ -282,7 +288,15 @@ function createMockGrowthRepository(): GrowthRepository {
 }
 
 function createPostgresGrowthRepository(): GrowthRepository {
-  throw new Error("Postgres GrowthRepository is not implemented yet.");
+  const mockRepository = createMockGrowthRepository();
+
+  return {
+    ...mockRepository,
+    listReservations: listPostgresReservations,
+    findReservation: findPostgresReservation,
+    createReservation: createPostgresReservation,
+    updateReservationPaymentStatus: updatePostgresReservationPaymentStatus
+  };
 }
 
 export function createGrowthRepository(driver: GrowthRepositoryDriver = "mock"): GrowthRepository {
@@ -310,9 +324,9 @@ export const createCustomer = growthRepository.createCustomer;
 export const convertLeadToCustomer = growthRepository.convertLeadToCustomer;
 export const listProducts = growthRepository.listProducts;
 export const findProduct = growthRepository.findProduct;
+export const createReservation = growthRepository.createReservation;
 export const listReservations = growthRepository.listReservations;
 export const findReservation = growthRepository.findReservation;
-export const createReservation = growthRepository.createReservation;
 export const updateReservationPaymentStatus = growthRepository.updateReservationPaymentStatus;
 export const listPayments = growthRepository.listPayments;
 export const findPaymentByStripePaymentIntent = growthRepository.findPaymentByStripePaymentIntent;
