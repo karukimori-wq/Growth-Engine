@@ -1,5 +1,5 @@
 import { demoWorkspace } from "@/lib/mock-data";
-import { businessMenu, getProfessionalApp } from "@/lib/professional-app-registry";
+import { getBusinessMenu, getBusinessMenuLabel, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +17,15 @@ function formatTime(value: string) {
   });
 }
 
-export default async function ReservationsPage({ searchParams: _searchParams }: Props) {
-  await _searchParams;
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
-  const currentProfessionalApp = getProfessionalApp(demoWorkspace.professionalStudioType);
+export default async function ReservationsPage({ searchParams: _searchParams }: Props) {
+  const query = await _searchParams;
+  const currentProfessionalApp = getProfessionalApp(first(query.studioKey) ?? demoWorkspace.professionalStudioType);
+  const businessMenu = getBusinessMenu(currentProfessionalApp.studioKey);
+  const reservationLabel = getBusinessMenuLabel("reservations", currentProfessionalApp.studioKey);
   const records = await listBusinessReservations(demoWorkspace.id);
 
   return (
@@ -35,7 +40,7 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
           <div className="nav-group">
             <p className="nav-title">Business</p>
             {businessMenu.map((item) => (
-              <a className={item.href === "/app/business/reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
+              <a className={item.key === "reservations" ? "nav-link active" : "nav-link"} href={item.href} key={item.href}>{item.label}</a>
             ))}
           </div>
           <div className="nav-group">
@@ -47,8 +52,8 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Growth Engine / 予約</p>
-            <h2 className="page-title">予約一覧</h2>
+            <p className="eyebrow">Growth Engine / {reservationLabel}</p>
+            <h2 className="page-title">{reservationLabel}一覧</h2>
           </div>
           <a className="button" href="/public/booking">一般顧客向け予約ページ</a>
         </header>
@@ -67,7 +72,7 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
             {records.map(({ reservation, customer, product }) => (
               <a
                 className="row-link"
-                href={`/app/business/reservations/${reservation.id}`}
+                href={`/app/business/reservations/${reservation.id}?studioKey=${currentProfessionalApp.studioKey}`}
                 key={reservation.id}
               >
                 <span>
