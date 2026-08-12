@@ -104,6 +104,92 @@ Recommended URL model:
 | 紹介 | Manages referral requests, referrer/referee references, and referral outcomes. |
 | 分析 | Shows funnel, traffic source, post, product, customer, and repeat analysis. |
 
+### Studio-Specific Business Labels
+
+Growth Engine owns shared Business capabilities. It must not own each Studio app's domain-specific professional work.
+
+However, user-facing labels, menu names, and field labels must adapt to the selected Studio app so the user sees familiar wording for their work.
+
+Implementation rules:
+
+1. Keep the internal Business menu keys common across Studio apps.
+2. Switch display labels by `studioKey`.
+3. Do not hard-code Numeria-only wording into Growth Engine's shared Business structure.
+4. Adding Velvet or another future Professional App must not require rebuilding the core Business menu structure.
+5. Unimplemented menu items must render a `coming_soon` screen instead of returning 404.
+
+Required menu model example:
+
+```ts
+businessMenu = [
+  {
+    key: "today",
+    defaultLabel: "今日やること",
+    labels: {
+      numeria: "今日やること",
+      velvet: "今日やること"
+    }
+  },
+  {
+    key: "marketing",
+    defaultLabel: "集客",
+    labels: {
+      numeria: "SNS / LINE集客",
+      velvet: "営業連絡 / 来店促進"
+    }
+  },
+  {
+    key: "leads",
+    defaultLabel: "見込み客",
+    labels: {
+      numeria: "LINE登録者",
+      velvet: "初回来店候補"
+    }
+  },
+  {
+    key: "reservations",
+    defaultLabel: "予約",
+    labels: {
+      numeria: "鑑定予約",
+      velvet: "来店予定"
+    }
+  },
+  {
+    key: "sales",
+    defaultLabel: "売上",
+    labels: {
+      numeria: "鑑定売上",
+      velvet: "来店売上"
+    }
+  },
+  {
+    key: "repeat",
+    defaultLabel: "リピート",
+    labels: {
+      numeria: "次回鑑定案内",
+      velvet: "再来店フォロー"
+    }
+  }
+]
+```
+
+Studio-specific wording examples:
+
+| Internal capability | Numeria label examples | Velvet label examples |
+| --- | --- | --- |
+| Lead / Prospect | LINE登録者 / 相談前の人 / 見込み客 | 初回来店候補 / 連絡中 / 見込み客 |
+| Reservation | 鑑定予約 | 来店予定 / 予約 |
+| Follow-up / Repeat | 次回鑑定案内 / 再相談 | 再来店フォロー / 次回連絡 |
+| Marketing | SNS / LINE集客 | 営業連絡 / 来店促進 |
+| Sales | 鑑定売上 / 顧客別売上 | 来店売上 / 顧客別売上 |
+
+Design principle:
+
+```text
+Growth Engine = 誰が、いつ、いくら、どこから来て、次に何をするか
+Studio app = そのサービスの中で何をしたか
+```
+
 ## Current Implementation Status
 
 Many screens are not complete yet. When a screen is not implemented, it must show a stable MVP placeholder instead of a 404.
@@ -216,20 +302,52 @@ Production direction:
 Growth Engine is the source of truth for:
 
 - Customer
+- Lead / Prospect
 - Reservation
 - Payment
 - Sales
+- Public booking
+- Follow-up
+- Referral
+- Analytics
 - Public Site
 - Business common menu
+- Studio app switching / Professional mode entry
 
 Professional Apps own their domain work:
 
-- Numeria Studio: Session and Report
-- Velvet: visits and service notes
+- Numeria Studio: appraisal Session, appraisal content, Report, and appraisal history
+- Velvet: visits, service notes, and customer-specific professional records
 
 Growth Engine must not perform Numeria appraisal logic or Report generation.
 
 Growth Engine must not perform Velvet's specialized professional work beyond shared Business and canonical Customer/Reservation/Payment/Sales ownership.
+
+Customer management is canonical in Growth Engine. Studio apps must not keep a separate customer master. Studio apps may store only the required reference IDs and their own professional records.
+
+Numeria example:
+
+| Growth Engine owns | Numeria Studio owns |
+| --- | --- |
+| `customerId` | `sessionId` |
+| `reservationId` | appraisal content |
+| 鑑定予約 | `reportId` |
+| 支払い状態 | Report reference |
+| 鑑定後フォロー | appraisal history |
+| LINE流入 |  |
+| リピート候補 |  |
+
+Velvet example:
+
+| Growth Engine owns | Velvet owns |
+| --- | --- |
+| `customerId` | `visitId` |
+| 来店予定 | visit history |
+| 売上 | service notes |
+| 顧客別売上 | preferences |
+| 次回連絡 | conversation notes |
+| 紹介元 | previous service context |
+| 再来店候補 |  |
 
 ## Data Safety
 
@@ -261,6 +379,21 @@ intent
 
 Velvet handoff must also use only the minimum references required for the target screen.
 
+Studio apps must receive only reference IDs such as `customerId` and `reservationId` unless the shared contract explicitly allows additional fields.
+
+Do not send these fields unnecessarily to Studio apps:
+
+- `paymentStatus`
+- `salesAmount`
+- Stripe secrets
+- confidential notes
+- full Report contents
+- full chart contents
+- `fullMeetingTranscript`
+- API keys
+- access tokens
+- secret prompts
+
 ## Implementation Priority
 
 1. Database-backed reservation persistence
@@ -288,3 +421,8 @@ The next Growth Engine buildout is not complete until all of the following are t
 - Public booking confirmation does not route users back to the input page when they expect reservation confirmation.
 - Public pages do not expose business/admin-only links.
 - No disallowed fields are sent to Professional Apps.
+- Numeria Studio selection displays Numeria-specific Business labels.
+- Velvet selection displays Velvet-specific Business labels.
+- Business capability keys and internal structure remain shared across Studio apps.
+- Studio-specific professional records remain owned by the relevant Studio app.
+- Customer, Reservation, Sales, and Payment remain canonical in Growth Engine.
