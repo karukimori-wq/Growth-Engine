@@ -3,20 +3,11 @@ import { createNumeriaStartUrl, mvpFollowupContext, practitionerUserId } from "@
 import { demoWorkspace } from "@/lib/mock-data";
 import { businessMenu, getBusinessActionForStudio, getProfessionalApp } from "@/lib/professional-app-registry";
 import { getBusinessReservation } from "@/server/business-reservations";
-import { createReservationFromReference } from "@/server/public-reservation-store";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ reservationId: string }>;
-  searchParams: Promise<{
-    workspaceId?: string;
-    customerId?: string;
-    productId?: string;
-    scheduledStartAt?: string;
-    scheduledEndAt?: string;
-    sourceChannel?: string;
-    createdAt?: string;
-    updatedAt?: string;
-  }>;
 };
 
 function formatDateTime(value: string) {
@@ -29,18 +20,9 @@ function formatDateTime(value: string) {
   });
 }
 
-export default async function ReservationDetailPage({ params, searchParams }: Props) {
+export default async function ReservationDetailPage({ params }: Props) {
   const { reservationId } = await params;
-  const query = await searchParams;
-  const fallbackReservation = createReservationFromReference({
-    reservationId,
-    ...query
-  });
-  const record = await getBusinessReservation(
-    reservationId,
-    demoWorkspace.id,
-    fallbackReservation ? [fallbackReservation] : []
-  );
+  const record = await getBusinessReservation(reservationId, demoWorkspace.id);
 
   if (!record) {
     notFound();
@@ -60,7 +42,6 @@ export default async function ReservationDetailPage({ params, searchParams }: Pr
         sourceApp: "growth-engine",
         reservationId: reservation.id,
         customerRef: { customerId },
-        sessionType: "numerology",
         intent: "start_appraisal_session"
       }
     : {
