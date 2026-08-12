@@ -62,7 +62,7 @@ export default async function BookingConfirmedPage({ searchParams }: Props) {
         </dl>
         <div className="action-row">
           <a className="button" href="/public/booking">予約ページへ戻る</a>
-          <a className="button secondary" href="/app">トップへ戻る</a>
+          <a className="button secondary" href="/public">トップへ戻る</a>
         </div>
         <p className="muted">
           管理画面の予約確認は担当者ログイン後に利用できます。
