@@ -1,20 +1,18 @@
-export default function RepeatPage() {
+import { BusinessComingSoon } from "../_components/business-coming-soon";
+
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function RepeatPage({ searchParams }: Props) {
   return (
-    <main className="main">
-      <section className="card">
-        <p className="eyebrow">Business</p>
-        <h1 className="page-title">リピート</h1>
-        <dl className="definition-list compact">
-          <dt>status</dt>
-          <dd>coming_soon</dd>
-          <dt>message</dt>
-          <dd>MVPでは準備中です</dd>
-        </dl>
-        <div className="action-row">
-          <a className="button" href="/app/business/followups/followup_res_001_post_session">フォローを確認</a>
-          <a className="button secondary" href="/app/business">ホームへ戻る</a>
-        </div>
-      </section>
-    </main>
+    <BusinessComingSoon
+      menuKey="repeat"
+      searchParams={await searchParams}
+      primaryAction={{
+        label: "フォローを確認",
+        href: "/app/business/followups/followup_res_001_post_session"
+      }}
+    />
   );
 }
