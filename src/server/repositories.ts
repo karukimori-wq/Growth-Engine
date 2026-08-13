@@ -17,11 +17,31 @@ import {
 import {
   createPostgresCustomer,
   findPostgresCustomer,
-  listPostgresCustomers
+  listPostgresCustomers,
+  updatePostgresCustomer
 } from "@/server/postgres-customer-repository";
 
 export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
 export type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
+export type UpdateCustomerInput = Partial<
+  Pick<
+    Customer,
+    | "name"
+    | "displayName"
+    | "contactInformation"
+    | "lineUserId"
+    | "snsAccounts"
+    | "sourceChannel"
+    | "sourceCampaignId"
+    | "sourceContentId"
+    | "referredByCustomerId"
+    | "customerStatus"
+    | "firstPurchaseAt"
+    | "lastPurchaseAt"
+    | "totalRevenue"
+    | "purchaseCount"
+  >
+>;
 export type CreateReservationInput = Omit<Reservation, "id" | "createdAt" | "updatedAt">;
 export type CreatePaymentInput = Omit<Payment, "id" | "createdAt" | "updatedAt">;
 export type CreateRevenueInput = Omit<Revenue, "id" | "createdAt">;
@@ -41,6 +61,7 @@ export type GrowthRepository = {
   listCustomers(workspaceId: string): Promise<Customer[]>;
   findCustomer(workspaceId: string, customerId: string): Promise<Customer | undefined>;
   createCustomer(input: CreateCustomerInput): Promise<Customer>;
+  updateCustomer(workspaceId: string, customerId: string, input: UpdateCustomerInput): Promise<Customer | undefined>;
   convertLeadToCustomer(workspaceId: string, lead: Lead): Promise<Customer>;
   listProducts(workspaceId: string): Promise<Product[]>;
   findProduct(workspaceId: string, productId: string): Promise<Product | undefined>;
@@ -78,6 +99,10 @@ function replaceById<T extends { id: string }>(records: T[], updatedRecord: T): 
   }
 
   return updatedRecord;
+}
+
+function removeUndefinedValues<T extends Record<string, unknown>>(input: T): Partial<T> {
+  return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>;
 }
 
 function createMockGrowthRepository(): GrowthRepository {
@@ -123,6 +148,23 @@ function createMockGrowthRepository(): GrowthRepository {
 
       customers.push(customer);
       return customer;
+    },
+
+    async updateCustomer(workspaceId, customerId, input) {
+      const customer = customers.find((record) => record.workspaceId === workspaceId && record.id === customerId);
+
+      if (!customer) {
+        return undefined;
+      }
+
+      return replaceById(customers, {
+        ...customer,
+        ...removeUndefinedValues(input),
+        workspaceId,
+        id: customer.id,
+        customerNumber: customer.customerNumber,
+        updatedAt: new Date().toISOString()
+      });
     },
 
     async convertLeadToCustomer(workspaceId, lead) {
@@ -300,6 +342,7 @@ function createPostgresGrowthRepository(): GrowthRepository {
     listCustomers: listPostgresCustomers,
     findCustomer: findPostgresCustomer,
     createCustomer: createPostgresCustomer,
+    updateCustomer: updatePostgresCustomer,
     listReservations: listPostgresReservations,
     findReservation: findPostgresReservation,
     createReservation: createPostgresReservation,
@@ -350,6 +393,7 @@ export const createLead = growthRepository.createLead;
 export const listCustomers = growthRepository.listCustomers;
 export const findCustomer = growthRepository.findCustomer;
 export const createCustomer = growthRepository.createCustomer;
+export const updateCustomer = growthRepository.updateCustomer;
 export const convertLeadToCustomer = growthRepository.convertLeadToCustomer;
 export const listProducts = growthRepository.listProducts;
 export const findProduct = growthRepository.findProduct;
