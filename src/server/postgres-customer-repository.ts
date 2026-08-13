@@ -1,6 +1,6 @@
 import { sql } from "@vercel/postgres";
 import type { Customer } from "@/domain/entities";
-import type { CreateCustomerInput } from "@/server/repositories";
+import type { CreateCustomerInput, UpdateCustomerInput } from "@/server/repositories";
 
 type CustomerRow = {
   id: string;
@@ -78,6 +78,10 @@ function toCustomer(row: CustomerRow): Customer {
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
   };
+}
+
+function removeUndefinedValues<T extends Record<string, unknown>>(input: T): Partial<T> {
+  return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>;
 }
 
 async function ensureCustomerSchema() {
@@ -202,4 +206,52 @@ export async function createPostgresCustomer(input: CreateCustomerInput): Promis
   `;
 
   return toCustomer(result.rows[0]);
+}
+
+export async function updatePostgresCustomer(
+  workspaceId: string,
+  customerId: string,
+  input: UpdateCustomerInput
+): Promise<Customer | undefined> {
+  await ensureCustomerSchema();
+
+  const existingCustomer = await findPostgresCustomer(workspaceId, customerId);
+
+  if (!existingCustomer) {
+    return undefined;
+  }
+
+  const updatedCustomer: Customer = {
+    ...existingCustomer,
+    ...removeUndefinedValues(input),
+    workspaceId,
+    id: existingCustomer.id,
+    customerNumber: existingCustomer.customerNumber,
+    updatedAt: new Date().toISOString()
+  };
+
+  const result = await sql<CustomerRow>`
+    UPDATE growth_customers
+    SET
+      name = ${updatedCustomer.name ?? null},
+      display_name = ${updatedCustomer.displayName},
+      contact_information = ${JSON.stringify(updatedCustomer.contactInformation)}::jsonb,
+      line_user_id = ${updatedCustomer.lineUserId ?? null},
+      sns_accounts = ${JSON.stringify(updatedCustomer.snsAccounts)}::jsonb,
+      source_channel = ${updatedCustomer.sourceChannel ?? null},
+      source_campaign_id = ${updatedCustomer.sourceCampaignId ?? null},
+      source_content_id = ${updatedCustomer.sourceContentId ?? null},
+      referred_by_customer_id = ${updatedCustomer.referredByCustomerId ?? null},
+      customer_status = ${updatedCustomer.customerStatus},
+      first_purchase_at = ${updatedCustomer.firstPurchaseAt ?? null},
+      last_purchase_at = ${updatedCustomer.lastPurchaseAt ?? null},
+      total_revenue = ${updatedCustomer.totalRevenue},
+      purchase_count = ${updatedCustomer.purchaseCount},
+      updated_at = ${updatedCustomer.updatedAt}
+    WHERE workspace_id = ${workspaceId}
+      AND id = ${customerId}
+    RETURNING *
+  `;
+
+  return result.rows[0] ? toCustomer(result.rows[0]) : undefined;
 }
