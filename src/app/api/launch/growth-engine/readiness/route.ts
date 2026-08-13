@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { demoWorkspace } from "@/lib/mock-data";
 import { createStripeClient } from "@/integrations/stripe";
 import { isProductionAuthConfigured } from "@/server/auth-session";
+import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
 
 type CheckStatus = "success" | "warning" | "error" | "skipped";
 
@@ -9,6 +10,8 @@ const checkedAt = () => new Date().toISOString();
 
 export async function GET() {
   const stripe = createStripeClient();
+  const repositoryDriver = getGrowthRepositoryDriver();
+  const postgresConfigured = hasPostgresEnvironment();
   const checkout = await stripe.createCheckoutSession({
     workspaceId: demoWorkspace.id,
     customerId: "cus_001",
@@ -34,10 +37,13 @@ export async function GET() {
     },
     {
       id: "public_booking.to_reservation",
-      status: "success",
+      status: repositoryDriver === "postgres" && postgresConfigured ? "success" : "warning",
       evidence:
-        "POST /api/public/bookings creates a requested Reservation with server-owned workspaceId/ownerUserId context and redirects to /public/booking/confirmed.",
-      issue: null
+        "POST /api/public/bookings creates a Customer and requested Reservation through the Growth Repository, then redirects to /public/booking/confirmed.",
+      issue:
+        repositoryDriver === "postgres" && postgresConfigured
+          ? null
+          : "Database-backed Customer and Reservation persistence is implemented, but production Postgres environment variables are not configured."
     },
     {
       id: "auth.workspace_isolation",
@@ -72,6 +78,12 @@ export async function GET() {
       productionAuthConfigured: isProductionAuthConfigured(),
       demoWorkspaceId: demoWorkspace.id,
       ownerUserId: demoWorkspace.ownerUserId
+    },
+    persistence: {
+      repositoryDriver,
+      postgresConfigured,
+      customerPersistence: repositoryDriver === "postgres" ? "postgres" : "mock",
+      reservationPersistence: repositoryDriver === "postgres" ? "postgres" : "mock"
     },
     dataSafety: {
       storesCardData: false,
