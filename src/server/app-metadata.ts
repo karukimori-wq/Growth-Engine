@@ -12,7 +12,7 @@ export function getCommitSha(): string | undefined {
   return process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA;
 }
 
-export type ContractStatus = "ok" | "warning" | "error";
+export type ContractStatus = "success" | "warning" | "error" | "skipped";
 
 export type ContractStatusResponse = {
   appName: typeof appName;
@@ -29,6 +29,14 @@ export type ContractStatusResponse = {
   velvetReferenceOnly: boolean;
   messageDraftReferenceOnly: boolean;
   paymentAndSalesCanonicalOwner: "growth-engine";
+  supportedProfessionalApps: string[];
+  velvetApiOperations: string[];
+  velvetEndpoints: string[];
+  velvetEvents: string[];
+  velvetAcceptedReferences: string[];
+  velvetReturnedReferences: string[];
+  messageDraftOperations: string[];
+  sourceOfTruth: Record<string, boolean | string>;
   monitoredStableEvents: string[];
   deniedCrossAppFields: string[];
   issues: string[];
@@ -43,7 +51,7 @@ export function getContractStatus(): ContractStatusResponse {
 
   return {
     appName,
-    status: issues.length > 0 ? "warning" : "ok",
+    status: issues.length > 0 ? "warning" : "success",
     contractVersion,
     identityMode: "workspaceId+userId",
     professionalIdRequired: false,
@@ -56,6 +64,71 @@ export function getContractStatus(): ContractStatusResponse {
     velvetReferenceOnly: true,
     messageDraftReferenceOnly: true,
     paymentAndSalesCanonicalOwner: "growth-engine",
+    supportedProfessionalApps: ["numeria-studio", "velvet"],
+    velvetApiOperations: [
+      "VelvetHandoff.Start",
+      "VelvetVisit.Start",
+      "VelvetVisit.Complete",
+      "VelvetMemory.Get",
+      "VelvetMemory.Update",
+      "VelvetNote.Create",
+      "VelvetTimeline.List",
+      "VelvetNextAction.Create"
+    ],
+    velvetEndpoints: [
+      "POST /api/visits",
+      "PATCH /api/visits/{visitId}",
+      "GET /api/customers/{customerId}/memory",
+      "PATCH /api/customers/{customerId}/memory",
+      "POST /api/customers/{customerId}/notes",
+      "GET /api/customers/{customerId}/timeline",
+      "POST /api/customers/{customerId}/next-actions"
+    ],
+    velvetEvents: [
+      "velvet.visit.started.v1",
+      "velvet.visit.completed.v1",
+      "velvet.memory.updated.v1",
+      "velvet.note.created.v1",
+      "velvet.next_action.created.v1"
+    ],
+    velvetAcceptedReferences: [
+      "workspaceId",
+      "userId",
+      "customerId",
+      "reservationId",
+      "visitScheduleId",
+      "intent",
+      "traceId",
+      "correlationId"
+    ],
+    velvetReturnedReferences: [
+      "visitId",
+      "noteId",
+      "lastVisitAt",
+      "nextActionRef",
+      "summaryRef",
+      "traceId",
+      "correlationId"
+    ],
+    messageDraftOperations: [
+      "MessageDraft.Generate",
+      "MessageDraft.Rewrite",
+      "MessageDraft.Metadata"
+    ],
+    sourceOfTruth: {
+      customer: "growth-engine",
+      reservation: "growth-engine",
+      payment: "growth-engine",
+      sales: "growth-engine",
+      velvetVisit: false,
+      velvetMemory: false,
+      velvetNote: false,
+      velvetNextAction: false,
+      messageDraft: false,
+      aiActivity: false,
+      aiUsage: false,
+      aiCapability: false
+    },
     monitoredStableEvents: [
       "growth.customer.created.v1",
       "growth.customer.updated.v1",
@@ -79,6 +152,7 @@ export function getContractStatus(): ContractStatusResponse {
       "full report body",
       "full professional note body",
       "full professional memory body",
+      "full conversation history",
       "API keys",
       "secret prompts"
     ],
