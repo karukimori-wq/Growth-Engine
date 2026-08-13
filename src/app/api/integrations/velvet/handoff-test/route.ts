@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { appName, getTimestamp } from "@/server/app-metadata";
 
 const velvetVisitsUrl =
-  process.env.VELVET_VISITS_URL ?? "https://velvet.illusionddt.chatgpt.site/api/visits";
+  process.env.VELVET_VISITS_URL ?? "https://velvet-ruby.vercel.app/api/visits";
 
 const velvetHandoffTestPayload = {
   workspaceId: "ws_test_001",
