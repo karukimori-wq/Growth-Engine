@@ -14,6 +14,11 @@ import {
   listPostgresReservations,
   updatePostgresReservationPaymentStatus
 } from "@/server/postgres-reservation-repository";
+import {
+  createPostgresCustomer,
+  findPostgresCustomer,
+  listPostgresCustomers
+} from "@/server/postgres-customer-repository";
 
 export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
 export type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
@@ -292,6 +297,9 @@ function createPostgresGrowthRepository(): GrowthRepository {
 
   return {
     ...mockRepository,
+    listCustomers: listPostgresCustomers,
+    findCustomer: findPostgresCustomer,
+    createCustomer: createPostgresCustomer,
     listReservations: listPostgresReservations,
     findReservation: findPostgresReservation,
     createReservation: createPostgresReservation,
