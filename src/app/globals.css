@@ -115,6 +115,10 @@ textarea {
   grid-column: span 4;
 }
 
+.span-3 {
+  grid-column: span 3;
+}
+
 .span-6 {
   grid-column: span 6;
 }
@@ -308,6 +312,7 @@ textarea {
   }
 
   .span-4,
+  .span-3,
   .span-6,
   .span-8,
   .span-12 {
