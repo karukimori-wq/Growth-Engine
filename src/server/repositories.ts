@@ -307,7 +307,7 @@ function createPostgresGrowthRepository(): GrowthRepository {
   };
 }
 
-function hasPostgresEnvironment() {
+export function hasPostgresEnvironment() {
   return Boolean(
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
@@ -324,6 +324,10 @@ function resolveGrowthRepositoryDriver(): GrowthRepositoryDriver {
   }
 
   return hasPostgresEnvironment() ? "postgres" : "mock";
+}
+
+export function getGrowthRepositoryDriver(): GrowthRepositoryDriver {
+  return resolveGrowthRepositoryDriver();
 }
 
 export function createGrowthRepository(driver: GrowthRepositoryDriver = resolveGrowthRepositoryDriver()): GrowthRepository {
