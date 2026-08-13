@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { demoWorkspace, products } from "@/lib/mock-data";
-import { createReservation } from "@/server/repositories";
+import { createCustomer, createReservation } from "@/server/repositories";
 
 const publicBookingSchema = z.object({
   productId: z.string().default("prd_numeria_basic"),
@@ -51,10 +51,19 @@ export async function POST(request: Request) {
     parsed.data.preferredTime,
     product.durationMinutes
   );
-  const customerId = `cus_public_${Date.now()}`;
+  const customer = await createCustomer({
+    workspaceId: demoWorkspace.id,
+    displayName: parsed.data.customerDisplayName ?? "公開予約のお客様",
+    contactInformation: {},
+    snsAccounts: {},
+    sourceChannel: parsed.data.sourceChannel,
+    customerStatus: "active",
+    totalRevenue: 0,
+    purchaseCount: 0
+  });
   const reservation = await createReservation({
     workspaceId: demoWorkspace.id,
-    customerId,
+    customerId: customer.id,
     productId: product.id,
     professionalStudioType: demoWorkspace.professionalStudioType,
     scheduledStartAt,
@@ -68,7 +77,8 @@ export async function POST(request: Request) {
   url.searchParams.set("reservationId", reservation.id);
   url.searchParams.set("workspaceId", demoWorkspace.id);
   url.searchParams.set("ownerUserId", demoWorkspace.ownerUserId);
-  url.searchParams.set("customerId", customerId);
+  url.searchParams.set("customerId", customer.id);
+  url.searchParams.set("customerDisplayName", customer.displayName);
   url.searchParams.set("productId", product.id);
   url.searchParams.set("scheduledStartAt", scheduledStartAt);
   url.searchParams.set("scheduledEndAt", scheduledEndAt);
