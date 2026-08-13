@@ -94,7 +94,24 @@ export default async function ReservationDetailPage({ params }: Props) {
             </dl>
             <div className="action-row">
               <a className="button" href={actionHref}>{businessAction.label}</a>
+              {reservation.customerId ? (
+                <a className="button secondary" href={`/app/business/customers/${reservation.customerId}`}>
+                  お客様詳細
+                </a>
+              ) : null}
               <a className="button secondary" href={`/app/business/followups/${mvpFollowupContext.followupId}`}>フォローを確認</a>
+              <a
+                className="button secondary"
+                href={`/app/business/post-draft-briefs/new?followupId=${mvpFollowupContext.followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
+              >
+                投稿案を依頼
+              </a>
+              <a
+                className="button secondary"
+                href={`/app/business/message-draft-briefs/new?followupId=${mvpFollowupContext.followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
+              >
+                連絡文案を依頼
+              </a>
             </div>
           </div>
 
