@@ -23,6 +23,7 @@ export default async function ProfessionalAppComingSoonPage({ params }: Props) {
 
   const sectionKey = section[0] ?? "home";
   const title = sectionTitles[sectionKey] ?? section.join(" /");
+  const isCustomerReference = sectionKey === "customers";
 
   return (
     <main className="main">
@@ -31,11 +32,20 @@ export default async function ProfessionalAppComingSoonPage({ params }: Props) {
         <h1 className="page-title">{title}</h1>
         <dl className="definition-list compact">
           <dt>status</dt>
-          <dd>coming_soon</dd>
+          <dd>{isCustomerReference ? "reference" : "coming_soon"}</dd>
           <dt>message</dt>
-          <dd>MVPでは準備中です</dd>
+          <dd>
+            {isCustomerReference
+              ? "Customer正本はGrowth Engineが管理します。Studio側はcustomerIdなどの参照IDで専門記録に接続します。"
+              : "MVPでは準備中です"}
+          </dd>
         </dl>
         <div className="action-row">
+          {isCustomerReference ? (
+            <a className="button" href="/app/business/customers">
+              Growth Engineのお客様を開く
+            </a>
+          ) : null}
           <a className="button" href={`/app/professional/${app.studioKey}`}>{app.studioName}へ戻る</a>
           <a className="button secondary" href="/app/business">Businessホームへ戻る</a>
         </div>
