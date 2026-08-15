@@ -6,9 +6,6 @@ export const dynamic = "force-dynamic";
 type Props = {
   searchParams: Promise<{
     reservationId?: string;
-    workspaceId?: string;
-    ownerUserId?: string;
-    customerId?: string;
     productId?: string;
     scheduledStartAt?: string;
   }>;
@@ -38,12 +35,13 @@ function formatReservationDateTime(value?: string) {
 export default async function BookingConfirmedPage({ searchParams }: Props) {
   const params = await searchParams;
   const reservationId = params.reservationId ?? "予約番号未取得";
-  const workspaceId = params.workspaceId === demoWorkspace.id ? demoWorkspace.id : demoWorkspace.id;
+  const workspaceId = demoWorkspace.id;
   const reservation = params.reservationId
     ? await findReservation(workspaceId, params.reservationId)
     : undefined;
-  const customerId = reservation?.customerId ?? params.customerId;
-  const customer = customerId ? await findCustomer(workspaceId, customerId) : undefined;
+  const customer = reservation?.customerId
+    ? await findCustomer(workspaceId, reservation.customerId)
+    : undefined;
   const productId = reservation?.productId ?? params.productId;
   const product = products.find((item) => item.workspaceId === workspaceId && item.id === productId);
   const scheduledStartAt = reservation?.scheduledStartAt ?? params.scheduledStartAt;
