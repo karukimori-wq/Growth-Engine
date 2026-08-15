@@ -78,13 +78,8 @@ export async function POST(request: Request) {
   url.searchParams.set("workspaceId", demoWorkspace.id);
   url.searchParams.set("ownerUserId", demoWorkspace.ownerUserId);
   url.searchParams.set("customerId", customer.id);
-  url.searchParams.set("customerDisplayName", customer.displayName);
   url.searchParams.set("productId", product.id);
   url.searchParams.set("scheduledStartAt", scheduledStartAt);
-  url.searchParams.set("scheduledEndAt", scheduledEndAt);
-  url.searchParams.set("sourceChannel", parsed.data.sourceChannel);
-  url.searchParams.set("createdAt", reservation.createdAt);
-  url.searchParams.set("updatedAt", reservation.updatedAt);
 
   return NextResponse.redirect(url, 303);
 }
