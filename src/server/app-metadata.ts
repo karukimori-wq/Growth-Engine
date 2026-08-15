@@ -25,8 +25,11 @@ export type ContractStatusResponse = {
   canonicalOwnershipChecked: boolean;
   supportsVelvetProfessionalApp: boolean;
   supportsVelvetHandoff: boolean;
+  supportsCommunicationPlanner: boolean;
+  supportsCommunicationPlannerHandoff: boolean;
   supportsMessageDraft: boolean;
   velvetReferenceOnly: boolean;
+  communicationPlannerReferenceOnly: boolean;
   messageDraftReferenceOnly: boolean;
   paymentAndSalesCanonicalOwner: "growth-engine";
   supportedProfessionalApps: string[];
@@ -35,6 +38,12 @@ export type ContractStatusResponse = {
   velvetEvents: string[];
   velvetAcceptedReferences: string[];
   velvetReturnedReferences: string[];
+  communicationPlannerApiOperations: string[];
+  communicationPlannerEndpoints: string[];
+  communicationPlannerEvents: string[];
+  communicationPlannerAcceptedReferences: string[];
+  communicationPlannerReturnedReferences: string[];
+  communicationPlannerBusinessBoundary: Record<string, string>;
   messageDraftOperations: string[];
   sourceOfTruth: Record<string, boolean | string>;
   monitoredStableEvents: string[];
@@ -60,8 +69,11 @@ export function getContractStatus(): ContractStatusResponse {
     canonicalOwnershipChecked,
     supportsVelvetProfessionalApp: true,
     supportsVelvetHandoff: true,
+    supportsCommunicationPlanner: true,
+    supportsCommunicationPlannerHandoff: true,
     supportsMessageDraft: true,
     velvetReferenceOnly: true,
+    communicationPlannerReferenceOnly: true,
     messageDraftReferenceOnly: true,
     paymentAndSalesCanonicalOwner: "growth-engine",
     supportedProfessionalApps: ["numeria-studio", "velvet"],
@@ -110,6 +122,63 @@ export function getContractStatus(): ContractStatusResponse {
       "traceId",
       "correlationId"
     ],
+    communicationPlannerApiOperations: [
+      "CommunicationInbox.List",
+      "CommunicationPerson.Get",
+      "CommunicationConversation.List",
+      "CommunicationContext.Get",
+      "CommunicationPromise.Create",
+      "CommunicationNextAction.Create",
+      "CommunicationReplyDraft.Create",
+      "CommunicationReplySafety.Check",
+      "CommunicationReplyDraft.Send"
+    ],
+    communicationPlannerEndpoints: [
+      "GET /api/inbox",
+      "GET /api/persons/{personId}",
+      "GET /api/persons/{personId}/conversations",
+      "GET /api/persons/{personId}/context",
+      "POST /api/conversations/{conversationId}/reply-drafts",
+      "POST /api/reply-drafts/{replyDraftId}/safety-check",
+      "POST /api/reply-drafts/{replyDraftId}/send"
+    ],
+    communicationPlannerEvents: [
+      "communication.message.received.v1",
+      "communication.message.sent.v1",
+      "communication.context.updated.v1",
+      "communication.promise.created.v1",
+      "communication.next_action.created.v1",
+      "communication.reply_draft.created.v1",
+      "communication.reply_safety.checked.v1",
+      "communication.person_channel.linked.v1"
+    ],
+    communicationPlannerAcceptedReferences: [
+      "workspaceId",
+      "userId",
+      "customerId",
+      "personId",
+      "conversationId",
+      "purpose",
+      "inputRef",
+      "traceId",
+      "correlationId"
+    ],
+    communicationPlannerReturnedReferences: [
+      "personId",
+      "conversationId",
+      "promiseId",
+      "nextActionId",
+      "replyDraftId",
+      "safetyCheckId",
+      "messageRef",
+      "traceId",
+      "correlationId"
+    ],
+    communicationPlannerBusinessBoundary: {
+      growthEngineOwns: "Follow-up, Repeat, Referral and business contact-measure decisions",
+      communicationPlannerOwns: "Conversation, ConversationContext, ReplyDraft, SafetyCheck and conversation next actions",
+      snsMessageDraftRole: "Simple business-initiated contact drafts only; no live conversation context or send workflow"
+    },
     messageDraftOperations: [
       "MessageDraft.Generate",
       "MessageDraft.Rewrite",
@@ -117,9 +186,19 @@ export function getContractStatus(): ContractStatusResponse {
     ],
     sourceOfTruth: {
       customer: "growth-engine",
+      lead: "growth-engine",
       reservation: "growth-engine",
       payment: "growth-engine",
       sales: "growth-engine",
+      followup: "growth-engine",
+      repeat: "growth-engine",
+      referral: "growth-engine",
+      communicationPerson: false,
+      conversation: false,
+      conversationContext: false,
+      communicationNextAction: false,
+      replyDraft: false,
+      safetyCheck: false,
       velvetVisit: false,
       velvetMemory: false,
       velvetNote: false,
@@ -140,6 +219,14 @@ export function getContractStatus(): ContractStatusResponse {
       "velvet.memory.updated.v1",
       "velvet.note.created.v1",
       "velvet.next_action.created.v1",
+      "communication.message.received.v1",
+      "communication.message.sent.v1",
+      "communication.context.updated.v1",
+      "communication.promise.created.v1",
+      "communication.next_action.created.v1",
+      "communication.reply_draft.created.v1",
+      "communication.reply_safety.checked.v1",
+      "communication.person_channel.linked.v1",
       "sns.post_draft.created.v1",
       "sns.message_draft.created.v1",
       "ai.activity.created.v1"
@@ -153,6 +240,7 @@ export function getContractStatus(): ContractStatusResponse {
       "full professional note body",
       "full professional memory body",
       "full conversation history",
+      "full ConversationContext body",
       "API keys",
       "secret prompts"
     ],
