@@ -13,6 +13,13 @@ export async function GET() {
   const repositoryDriver = getGrowthRepositoryDriver();
   const postgresConfigured = hasPostgresEnvironment();
   const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
+  const blockedUserFlows = databaseBackedPersistenceReady
+    ? []
+    : [
+        "public_booking.to_business_reservation_list",
+        "reservation.detail.after_cross_browser_reload",
+        "customer.detail.after_cross_browser_reload"
+      ];
   const issues = databaseBackedPersistenceReady
     ? []
     : [
@@ -27,6 +34,7 @@ export async function GET() {
       repositoryDriver,
       postgresConfigured,
       databaseBackedPersistenceReady,
+      blockedUserFlows,
       activePersistence: {
         customer: repositoryDriver === "postgres" ? "postgres" : "mock",
         reservation: repositoryDriver === "postgres" ? "postgres" : "mock",
@@ -47,6 +55,9 @@ export async function GET() {
         stripeDataSentOutsideGrowthEngine: false,
         customerMasterSentOutsideGrowthEngine: false
       },
+      nextAction: databaseBackedPersistenceReady
+        ? "No persistence action required."
+        : "Configure GROWTH_REPOSITORY_DRIVER=postgres and one supported Postgres URL env in Vercel Production, then redeploy.",
       issues,
       timestamp: getTimestamp()
     },
