@@ -1,6 +1,7 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessMenu, getBusinessMenuLabel, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
+import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,9 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
   const currentProfessionalApp = getProfessionalApp(first(query.studioKey) ?? demoWorkspace.professionalStudioType);
   const businessMenu = getBusinessMenu(currentProfessionalApp.studioKey);
   const reservationLabel = getBusinessMenuLabel("reservations", currentProfessionalApp.studioKey);
+  const repositoryDriver = getGrowthRepositoryDriver();
+  const postgresConfigured = hasPostgresEnvironment();
+  const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
   const records = await listBusinessReservations(demoWorkspace.id);
 
   return (
@@ -57,6 +61,19 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
           </div>
           <a className="button" href="/public/booking">一般顧客向け予約ページ</a>
         </header>
+
+        {!databaseBackedPersistenceReady ? (
+          <section className="card">
+            <p className="eyebrow">保存設定の確認が必要</p>
+            <h3>本番DB保存がまだ有効ではありません</h3>
+            <p className="muted">
+              現在は {repositoryDriver} repository で動作しています。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の予約一覧表示は保証できません。
+            </p>
+            <p className="muted">
+              Vercel Production に <code>GROWTH_REPOSITORY_DRIVER=postgres</code> と Postgres 接続envを設定し、redeploy後に <code>/api/persistence/status</code> を確認してください。
+            </p>
+          </section>
+        ) : null}
 
         <section className="card">
           <div className="table-list">
