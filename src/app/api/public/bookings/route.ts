@@ -75,9 +75,6 @@ export async function POST(request: Request) {
   const url = new URL("/public/booking/confirmed", request.url);
 
   url.searchParams.set("reservationId", reservation.id);
-  url.searchParams.set("workspaceId", demoWorkspace.id);
-  url.searchParams.set("ownerUserId", demoWorkspace.ownerUserId);
-  url.searchParams.set("customerId", customer.id);
   url.searchParams.set("productId", product.id);
   url.searchParams.set("scheduledStartAt", scheduledStartAt);
 
