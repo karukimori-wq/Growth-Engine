@@ -1,25 +1,17 @@
 import { BusinessSidebar } from "@/app/app/business/_components/business-sidebar";
-import { appName, getTimestamp } from "@/server/app-metadata";
-import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { appName } from "@/server/app-metadata";
+import { getPersistencePreflight } from "@/server/persistence-preflight";
 import { RoundtripCheckButton } from "./roundtrip-check-button";
 
 export const dynamic = "force-dynamic";
-
-const postgresEnvCandidates = [
-  "POSTGRES_URL",
-  "POSTGRES_PRISMA_URL",
-  "POSTGRES_URL_NON_POOLING",
-  "DATABASE_URL"
-];
 
 function StatusBadge({ ready }: { ready: boolean }) {
   return <span className={`badge ${ready ? "" : "warning"}`}>{ready ? "ready" : "needs_fix"}</span>;
 }
 
 export default function PersistenceStatusPage() {
-  const repositoryDriver = getGrowthRepositoryDriver();
-  const postgresConfigured = hasPostgresEnvironment();
-  const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
+  const preflight = getPersistencePreflight();
+  const databaseBackedPersistenceReady = preflight.databaseBackedPersistenceReady;
   const blockedUserFlows = databaseBackedPersistenceReady
     ? []
     : [
@@ -43,11 +35,11 @@ export default function PersistenceStatusPage() {
         <section className="grid">
           <div className="card span-4">
             <p className="muted">repository driver</p>
-            <p className="metric">{repositoryDriver}</p>
+            <p className="metric">{preflight.repositoryDriver}</p>
           </div>
           <div className="card span-4">
             <p className="muted">Postgres env</p>
-            <p className="metric">{postgresConfigured ? "configured" : "missing"}</p>
+            <p className="metric">{preflight.postgresConfigured ? "configured" : "missing"}</p>
           </div>
           <div className="card span-4">
             <p className="muted">DB backed persistence</p>
@@ -63,25 +55,30 @@ export default function PersistenceStatusPage() {
             </p>
             <div className="action-row">
               <a className="button secondary" href="/api/persistence/status">APIステータスを見る</a>
+              <a className="button secondary" href="/api/persistence/preflight">preflightを見る</a>
               <a className="button secondary" href="/app/business/reservations">予約一覧へ戻る</a>
             </div>
           </div>
 
           <div className="card span-6">
-            <h3>必要なProduction env</h3>
+            <h3>Production env preflight</h3>
             <ul className="task-list">
               <li className="task">
                 <span><code>GROWTH_REPOSITORY_DRIVER</code></span>
-                <span className="badge">postgres</span>
+                <span className={`badge ${preflight.env.growthRepositoryDriverConfigured ? "" : "warning"}`}>
+                  {preflight.env.growthRepositoryDriverConfigured ? "configured" : "missing"}
+                </span>
               </li>
-              {postgresEnvCandidates.map((name) => (
-                <li className="task" key={name}>
-                  <span><code>{name}</code></span>
-                  <span className="badge">候補</span>
+              {preflight.env.candidates.map((candidate) => (
+                <li className="task" key={candidate.name}>
+                  <span><code>{candidate.name}</code></span>
+                  <span className={`badge ${candidate.configured ? "" : "warning"}`}>
+                    {candidate.configured ? "configured" : "候補"}
+                  </span>
                 </li>
               ))}
             </ul>
-            <p className="muted">envの値は画面・API・ログに表示しません。</p>
+            <p className="muted">envの値は画面・API・ログに表示しません。表示するのは設定有無のみです。</p>
           </div>
 
           <div className="card span-6">
@@ -89,7 +86,7 @@ export default function PersistenceStatusPage() {
             <ul className="task-list">
               <li className="task">
                 <span>endpoint</span>
-                <span><code>POST /api/persistence/roundtrip</code></span>
+                <span><code>{preflight.verification.roundtripEndpoint}</code></span>
               </li>
               <li className="task">
                 <span>owner session</span>
@@ -122,6 +119,18 @@ export default function PersistenceStatusPage() {
           </div>
 
           <div className="card span-12">
+            <h3>次の作業</h3>
+            <ul className="task-list">
+              {preflight.nextActions.map((action) => (
+                <li className="task" key={action}>
+                  <span>{action}</span>
+                  <span className="badge warning">next</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="card span-12">
             <h3>Data Safety</h3>
             <ul className="task-list">
               <li className="task"><span>env値の表示</span><span className="badge">false</span></li>
@@ -130,7 +139,7 @@ export default function PersistenceStatusPage() {
               <li className="task"><span>Stripe情報の外部送信</span><span className="badge">false</span></li>
               <li className="task"><span>Customer master全文の外部送信</span><span className="badge">false</span></li>
             </ul>
-            <p className="muted">checkedAt: {getTimestamp()} / appName: {appName}</p>
+            <p className="muted">checkedAt: {preflight.checkedAt} / appName: {appName}</p>
           </div>
         </section>
       </main>
