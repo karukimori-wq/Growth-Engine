@@ -48,6 +48,15 @@ export async function GET() {
         sales: "growth-engine"
       },
       requiredEnvCandidates: postgresEnvCandidates,
+      verification: {
+        roundtripEndpoint: "POST /api/persistence/roundtrip",
+        roundtripRequiresOwnerSession: true,
+        expectedRoundtripWhenReady: {
+          status: "success",
+          roundtripReady: true,
+          roundtripStatus: "success"
+        }
+      },
       dataSafety: {
         envValuesExposed: false,
         paymentStatusSentOutsideGrowthEngine: false,
@@ -56,7 +65,7 @@ export async function GET() {
         customerMasterSentOutsideGrowthEngine: false
       },
       nextAction: databaseBackedPersistenceReady
-        ? "No persistence action required."
+        ? "Run POST /api/persistence/roundtrip from an owner session to verify DB write/read/list behavior."
         : "Configure GROWTH_REPOSITORY_DRIVER=postgres and one supported Postgres URL env in Vercel Production, then redeploy.",
       issues,
       timestamp: getTimestamp()
