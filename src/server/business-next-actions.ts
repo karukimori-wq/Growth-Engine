@@ -49,7 +49,8 @@ export function buildRepeatCandidateActions(
     .filter(({ customer, latestReservation }) => customer.purchaseCount >= 1 || latestReservation)
     .map(({ customer, paidAmount, latestReservation }) => {
       const lastUseDays = daysSince(customer.lastPurchaseAt ?? latestReservation?.scheduledStartAt);
-      const priority = lastUseDays === undefined ? "medium" : lastUseDays >= 75 ? "high" : lastUseDays >= 30 ? "medium" : "low";
+      const priority: BusinessCandidateAction["priority"] =
+        lastUseDays === undefined ? "medium" : lastUseDays >= 75 ? "high" : lastUseDays >= 30 ? "medium" : "low";
       const reason =
         lastUseDays === undefined
           ? "利用履歴がありますが、最終利用日の情報が不足しています。"
@@ -80,7 +81,8 @@ export function buildReferralCandidateActions(
   return records
     .filter(({ customer, paidAmount }) => customer.purchaseCount >= 2 || paidAmount >= 20000)
     .map(({ customer, paidAmount, paidCount, latestReservation }) => {
-      const priority = customer.purchaseCount >= 3 || paidAmount >= 30000 ? "high" : "medium";
+      const priority: BusinessCandidateAction["priority"] =
+        customer.purchaseCount >= 3 || paidAmount >= 30000 ? "high" : "medium";
 
       return {
         customer,
