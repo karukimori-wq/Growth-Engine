@@ -17,6 +17,12 @@ The active driver is reported by:
 GET /api/persistence/status
 ```
 
+The owner-protected UI status screen is:
+
+```http
+GET /app/business/settings/persistence
+```
+
 Production readiness requires:
 
 ```json
@@ -56,6 +62,58 @@ The production repository creates its MVP tables lazily when the repository is f
 
 This is intentionally scoped to the currently implemented MVP persistence surface. The broader draft schema remains documented in `docs/database-ddl.sql`, but the active runtime repository uses the `growth_*` tables above.
 
+Runtime-created Customer table:
+
+```sql
+CREATE TABLE IF NOT EXISTS growth_customers (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  lead_id TEXT,
+  customer_number TEXT NOT NULL,
+  name TEXT,
+  display_name TEXT NOT NULL,
+  contact_information JSONB NOT NULL DEFAULT '{}'::jsonb,
+  line_user_id TEXT,
+  sns_accounts JSONB NOT NULL DEFAULT '{}'::jsonb,
+  source_channel TEXT,
+  source_campaign_id TEXT,
+  source_content_id TEXT,
+  referred_by_customer_id TEXT,
+  customer_status TEXT NOT NULL,
+  first_purchase_at TIMESTAMPTZ,
+  last_purchase_at TIMESTAMPTZ,
+  total_revenue NUMERIC NOT NULL DEFAULT 0,
+  purchase_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+```
+
+Runtime-created Reservation table:
+
+```sql
+CREATE TABLE IF NOT EXISTS growth_reservations (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  lead_id TEXT,
+  customer_id TEXT,
+  product_id TEXT NOT NULL,
+  professional_studio_type TEXT NOT NULL,
+  scheduled_start_at TIMESTAMPTZ NOT NULL,
+  scheduled_end_at TIMESTAMPTZ NOT NULL,
+  status TEXT NOT NULL,
+  source_channel TEXT,
+  campaign_id TEXT,
+  content_id TEXT,
+  payment_status TEXT NOT NULL,
+  session_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+```
+
+Indexes are created for workspace-scoped list and detail paths. All Customer and Reservation reads must remain workspace-scoped.
+
 ## Verification sequence after setting env vars
 
 After configuring Production env vars, redeploy Production and run the following checks.
@@ -78,23 +136,35 @@ Expected:
 }
 ```
 
-2. Run Customer roundtrip.
+2. Run the combined Customer and Reservation roundtrip from an owner session.
 
 ```http
-POST https://growth-engine-ruby-nine.vercel.app/api/persistence/customer-roundtrip-test
+POST https://growth-engine-ruby-nine.vercel.app/api/persistence/roundtrip
 ```
 
-Expected: `status: success`, created customer can be found by detail and list APIs.
+Expected:
 
-3. Run Reservation roundtrip.
-
-```http
-POST https://growth-engine-ruby-nine.vercel.app/api/persistence/reservation-roundtrip-test
+```json
+{
+  "status": "success",
+  "roundtripReady": true,
+  "roundtripStatus": "success",
+  "repositoryDriver": "postgres",
+  "postgresConfigured": true,
+  "checks": {
+    "customerCreated": true,
+    "customerFound": true,
+    "customerListed": true,
+    "reservationCreated": true,
+    "reservationFound": true,
+    "reservationListed": true
+  }
+}
 ```
 
-Expected: `status: success`, created reservation can be found by detail and list APIs, and customer reference is readable.
+The roundtrip endpoint requires an owner session. If called without a signed owner session, it must return `401` with `errorCode: AUTH_REQUIRED`.
 
-4. Create a public booking.
+3. Create a public booking.
 
 ```http
 POST https://growth-engine-ruby-nine.vercel.app/api/public/bookings
@@ -111,7 +181,7 @@ The public confirmation URL must not include:
 - `salesAmount`
 - Stripe identifiers or secrets
 
-5. Confirm the reservation appears in the Business UI.
+4. Confirm the reservation appears in the Business UI.
 
 ```http
 GET /app/business/reservations
