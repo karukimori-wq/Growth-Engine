@@ -22,6 +22,10 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function matchesText(value: string | undefined, query: string) {
+  return value?.toLowerCase().includes(query.toLowerCase()) ?? false;
+}
+
 export default async function ReservationsPage({ searchParams: _searchParams }: Props) {
   const query = await _searchParams;
   const currentProfessionalApp = getProfessionalApp(first(query.studioKey) ?? demoWorkspace.professionalStudioType);
@@ -31,6 +35,26 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
   const postgresConfigured = hasPostgresEnvironment();
   const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
   const records = await listBusinessReservations(demoWorkspace.id);
+  const statusFilter = first(query.status) ?? "all";
+  const paymentFilter = first(query.paymentStatus) ?? "all";
+  const sourceFilter = first(query.sourceChannel) ?? "all";
+  const searchQuery = first(query.q)?.trim() ?? "";
+  const visibleRecords = records.filter(({ reservation, customer, product }) => {
+    const statusMatches = statusFilter === "all" || reservation.status === statusFilter;
+    const paymentMatches = paymentFilter === "all" || reservation.paymentStatus === paymentFilter;
+    const sourceMatches = sourceFilter === "all" || (reservation.sourceChannel ?? "unknown") === sourceFilter;
+    const textMatches =
+      searchQuery.length === 0 ||
+      matchesText(reservation.id, searchQuery) ||
+      matchesText(reservation.customerId, searchQuery) ||
+      matchesText(customer?.displayName, searchQuery) ||
+      matchesText(product?.name, searchQuery);
+
+    return statusMatches && paymentMatches && sourceMatches && textMatches;
+  });
+  const sourceOptions = Array.from(
+    new Set(records.map(({ reservation }) => reservation.sourceChannel ?? "unknown"))
+  ).sort();
 
   return (
     <div className="shell">
@@ -76,6 +100,49 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
         ) : null}
 
         <section className="card">
+          <form className="filter-bar">
+            <input type="hidden" name="studioKey" value={currentProfessionalApp.studioKey} />
+            <label className="field-label compact">
+              検索
+              <input name="q" placeholder="予約ID・顧客・メニュー" defaultValue={searchQuery} />
+            </label>
+            <label className="field-label compact">
+              予約状態
+              <select name="status" defaultValue={statusFilter}>
+                <option value="all">すべて</option>
+                <option value="requested">受付済み</option>
+                <option value="confirmed">確定</option>
+                <option value="cancelled">キャンセル</option>
+                <option value="completed">完了</option>
+                <option value="no_show">無断キャンセル</option>
+              </select>
+            </label>
+            <label className="field-label compact">
+              支払い状態
+              <select name="paymentStatus" defaultValue={paymentFilter}>
+                <option value="all">すべて</option>
+                <option value="unpaid">未払い</option>
+                <option value="paid">支払い済み</option>
+                <option value="refunded">返金済み</option>
+              </select>
+            </label>
+            <label className="field-label compact">
+              流入元
+              <select name="sourceChannel" defaultValue={sourceFilter}>
+                <option value="all">すべて</option>
+                {sourceOptions.map((source) => (
+                  <option value={source} key={source}>
+                    {source === "unknown" ? "未設定" : source}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button" type="submit">絞り込み</button>
+            <a className="button secondary" href={`/app/business/reservations?studioKey=${currentProfessionalApp.studioKey}`}>
+              リセット
+            </a>
+          </form>
+          <p className="muted">表示 {visibleRecords.length}件 / 全{records.length}件</p>
           <div className="table-list">
             {records.length === 0 ? (
               <div className="row-link">
@@ -86,7 +153,16 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
                 </span>
               </div>
             ) : null}
-            {records.map(({ reservation, customer, product }) => (
+            {records.length > 0 && visibleRecords.length === 0 ? (
+              <div className="row-link">
+                <span>
+                  <strong>条件に合う予約はありません</strong>
+                  <br />
+                  <span className="muted">検索語、予約状態、支払い状態、流入元を変更してください。</span>
+                </span>
+              </div>
+            ) : null}
+            {visibleRecords.map(({ reservation, customer, product }) => (
               <a
                 className="row-link"
                 href={`/app/business/reservations/${reservation.id}?studioKey=${currentProfessionalApp.studioKey}`}
