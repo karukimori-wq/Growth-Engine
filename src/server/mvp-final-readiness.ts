@@ -1,6 +1,6 @@
 import { getContractStatus, getTimestamp } from "@/server/app-metadata";
 import { isProductionAuthConfigured } from "@/server/auth-session";
-import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { getPersistencePreflight } from "@/server/persistence-preflight";
 
 type StepStatus = "success" | "warning" | "error" | "skipped";
 
@@ -43,9 +43,10 @@ function summarize(steps: FinalReadinessStep[]): Record<StepStatus, number> {
 }
 
 export function getMvpFinalReadiness(): MvpFinalReadiness {
-  const repositoryDriver = getGrowthRepositoryDriver();
-  const postgresConfigured = hasPostgresEnvironment();
-  const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
+  const persistencePreflight = getPersistencePreflight();
+  const repositoryDriver = persistencePreflight.repositoryDriver;
+  const postgresConfigured = persistencePreflight.postgresConfigured;
+  const databaseBackedPersistenceReady = persistencePreflight.databaseBackedPersistenceReady;
   const productionAuthConfigured = isProductionAuthConfigured();
   const contractStatus = getContractStatus();
   const contractsReady =
@@ -60,19 +61,19 @@ export function getMvpFinalReadiness(): MvpFinalReadiness {
       id: "postgres.production_env",
       title: "Postgres Production env設定",
       status: databaseBackedPersistenceReady ? "success" : "warning",
-      evidence: `repositoryDriver=${repositoryDriver}; postgresConfigured=${postgresConfigured}`,
+      evidence: `repositoryDriver=${repositoryDriver}; postgresConfigured=${postgresConfigured}; preflight=${persistencePreflight.verification.preflightEndpoint}`,
       issue: databaseBackedPersistenceReady
         ? null
-        : "Production DB persistence is not active. Customer and Reservation still use the mock fallback.",
+        : persistencePreflight.issues[0] ?? "Production DB persistence is not active.",
       nextAction: databaseBackedPersistenceReady
         ? null
-        : "Set GROWTH_REPOSITORY_DRIVER=postgres and one supported Postgres connection env in Vercel Production, then redeploy."
+        : persistencePreflight.nextActions.join(" ")
     },
     {
       id: "db.roundtrip_verification",
       title: "DB保存 roundtrip確認",
       status: databaseBackedPersistenceReady ? "success" : "warning",
-      evidence: "POST /api/persistence/roundtrip and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.",
+      evidence: `${persistencePreflight.verification.roundtripEndpoint} and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.`,
       issue: databaseBackedPersistenceReady
         ? null
         : "Roundtrip can be executed, but it will return warning/skipped until Postgres env is configured.",
