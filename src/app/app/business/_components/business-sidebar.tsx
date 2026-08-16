@@ -3,7 +3,7 @@ import { getBusinessMenu, getProfessionalApp, type BusinessMenuKey } from "@/lib
 
 type Props = {
   studioKey?: string;
-  activeKey?: BusinessMenuKey | "customers";
+  activeKey?: BusinessMenuKey | "customers" | "persistence";
 };
 
 export function BusinessSidebar({ studioKey, activeKey }: Props) {
@@ -38,6 +38,15 @@ export function BusinessSidebar({ studioKey, activeKey }: Props) {
           </a>
           <a className="nav-link" href="/public/booking">
             予約ページ
+          </a>
+        </div>
+        <div className="nav-group">
+          <p className="nav-title">運用確認</p>
+          <a
+            className={activeKey === "persistence" ? "nav-link active" : "nav-link"}
+            href="/app/business/settings/persistence"
+          >
+            永続化
           </a>
         </div>
       </nav>
