@@ -1,6 +1,7 @@
 import { BusinessSidebar } from "@/app/app/business/_components/business-sidebar";
 import { appName, getTimestamp } from "@/server/app-metadata";
 import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { RoundtripCheckButton } from "./roundtrip-check-button";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,8 @@ export default function PersistenceStatusPage() {
               </li>
             </ul>
             <p className="muted">テスト作成するデータは参照ID中心です。支払い情報やStripe情報は外部送信しません。</p>
+            <div className="divider" />
+            <RoundtripCheckButton />
           </div>
 
           <div className="card span-12">
