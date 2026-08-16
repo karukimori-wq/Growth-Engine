@@ -1,6 +1,7 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessMenuLabel } from "@/lib/professional-app-registry";
-import { getBusinessMetrics, formatCurrency } from "@/server/business-metrics";
+import { getBusinessMetrics } from "@/server/business-metrics";
+import { buildReferralCandidateActions } from "@/server/business-next-actions";
 import { BusinessSidebar } from "../_components/business-sidebar";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function ReferralsPage({ searchParams }: Props) {
   const studioKey = first(query.studioKey) ?? demoWorkspace.professionalStudioType;
   const label = getBusinessMenuLabel("referrals", studioKey);
   const metrics = await getBusinessMetrics(demoWorkspace.id);
-  const candidates = metrics.customerSales.filter(({ customer, paidAmount }) => customer.purchaseCount >= 2 || paidAmount >= 20000);
+  const candidates = buildReferralCandidateActions(metrics.customerSales, demoWorkspace.currency);
 
   return (
     <div className="shell">
@@ -34,20 +35,49 @@ export default async function ReferralsPage({ searchParams }: Props) {
           </a>
         </header>
 
-        <section className="card">
-          <div className="table-list">
-            {candidates.map(({ customer, paidAmount }) => (
-              <a className="row-link" href={`/app/business/customers/${customer.id}`} key={customer.id}>
-                <span>
-                  <strong>{customer.displayName}</strong>
-                  <br />
-                  <span className="muted">
-                    累計支払い済み {formatCurrency(paidAmount, demoWorkspace.currency)} / 利用回数 {customer.purchaseCount}回
+        <section className="grid">
+          <div className="card span-4">
+            <p className="eyebrow">候補</p>
+            <p className="metric">{candidates.length}名</p>
+          </div>
+          <div className="card span-4">
+            <p className="eyebrow">優先度高</p>
+            <p className="metric">{candidates.filter((candidate) => candidate.priority === "high").length}名</p>
+          </div>
+          <div className="card span-4">
+            <p className="eyebrow">方針</p>
+            <p className="metric">確認後依頼</p>
+          </div>
+
+          <div className="card span-12">
+            <h3>紹介依頼候補</h3>
+            <div className="table-list">
+              {candidates.length > 0 ? candidates.map((candidate) => (
+                <div className="row-link" key={candidate.customer.id}>
+                  <span>
+                    <strong>{candidate.customer.displayName}</strong>
+                    <br />
+                    <span className="muted">{candidate.reason}</span>
+                    <br />
+                    <span className="muted">次の行動: {candidate.nextAction}</span>
                   </span>
-                </span>
-                <span className="badge">紹介候補</span>
-              </a>
-            ))}
+                  <span className="action-row">
+                    <a className="button secondary" href={`/app/business/customers/${candidate.customer.id}`}>
+                      顧客
+                    </a>
+                    <a className="button" href={candidate.messageDraftHref}>
+                      文案
+                    </a>
+                  </span>
+                </div>
+              )) : <p className="muted">現在のデータでは紹介依頼候補はありません。</p>}
+            </div>
+          </div>
+
+          <div className="card span-12">
+            <p className="muted">
+              紹介候補はGrowth Engine内の顧客・予約・支払い記録から判断します。依頼文案の作成時も参照ID中心で連携します。
+            </p>
           </div>
         </section>
       </main>
