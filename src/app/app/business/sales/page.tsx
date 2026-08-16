@@ -1,6 +1,7 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessMenuLabel } from "@/lib/professional-app-registry";
 import { getBusinessMetrics, formatCurrency } from "@/server/business-metrics";
+import { buildPaymentStatusRows, buildRevenueByProduct, buildRevenueBySource } from "@/server/business-analytics";
 import { BusinessSidebar } from "../_components/business-sidebar";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export default async function SalesPage({ searchParams }: Props) {
   const studioKey = first(query.studioKey) ?? demoWorkspace.professionalStudioType;
   const label = getBusinessMenuLabel("sales", studioKey);
   const metrics = await getBusinessMetrics(demoWorkspace.id);
+  const revenueBySource = buildRevenueBySource(metrics);
+  const revenueByProduct = buildRevenueByProduct(metrics);
+  const paymentStatusRows = buildPaymentStatusRows(metrics);
 
   return (
     <div className="shell">
@@ -83,6 +87,56 @@ export default async function SalesPage({ searchParams }: Props) {
                     {reservation.paymentStatus}
                   </span>
                 </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="card span-4">
+            <h3>流入元別売上</h3>
+            <div className="table-list">
+              {revenueBySource.length > 0 ? revenueBySource.map((row) => (
+                <div className="row-link" key={row.key}>
+                  <span>
+                    <strong>{row.label}</strong>
+                    <br />
+                    <span className="muted">{row.count}件</span>
+                  </span>
+                  <span className="badge">{formatCurrency(row.amount, demoWorkspace.currency)}</span>
+                </div>
+              )) : <p className="muted">支払い済み売上はまだありません。</p>}
+            </div>
+          </div>
+
+          <div className="card span-4">
+            <h3>商品別売上</h3>
+            <div className="table-list">
+              {revenueByProduct.length > 0 ? revenueByProduct.map((row) => (
+                <div className="row-link" key={row.key}>
+                  <span>
+                    <strong>{row.label}</strong>
+                    <br />
+                    <span className="muted">{row.count}件</span>
+                  </span>
+                  <span className="badge">{formatCurrency(row.amount, demoWorkspace.currency)}</span>
+                </div>
+              )) : <p className="muted">支払い済み売上はまだありません。</p>}
+            </div>
+          </div>
+
+          <div className="card span-4">
+            <h3>支払い状態</h3>
+            <div className="table-list">
+              {paymentStatusRows.map((row) => (
+                <div className="row-link" key={row.key}>
+                  <span>
+                    <strong>{row.label}</strong>
+                    <br />
+                    <span className="muted">{row.count}件</span>
+                  </span>
+                  <span className={row.key === "paid" ? "badge" : "badge warning"}>
+                    {row.amount > 0 ? formatCurrency(row.amount, demoWorkspace.currency) : "要確認"}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
