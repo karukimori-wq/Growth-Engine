@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { demoWorkspace } from "@/lib/mock-data";
 import { findCustomer, listReservations, listPayments } from "@/server/repositories";
 import { formatCurrency } from "@/server/business-metrics";
+import { buildCustomerActivityTimeline } from "@/server/customer-activity-timeline";
 import { BusinessSidebar } from "../../_components/business-sidebar";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,11 @@ export default async function CustomerDetailPage({ params }: Props) {
   const paidAmount = customerPayments
     .filter((payment) => payment.paymentStatus === "paid")
     .reduce((total, payment) => total + payment.amount, 0);
+  const timeline = buildCustomerActivityTimeline({
+    customer,
+    reservations: customerReservations,
+    payments: customerPayments
+  });
 
   return (
     <div className="shell">
@@ -72,17 +78,47 @@ export default async function CustomerDetailPage({ params }: Props) {
           <div className="card span-12">
             <h3>予約</h3>
             <div className="table-list">
-              {customerReservations.map((reservation) => (
-                <a className="row-link" href={`/app/business/reservations/${reservation.id}`} key={reservation.id}>
-                  <span>
-                    <strong>{new Date(reservation.scheduledStartAt).toLocaleString("ja-JP")}</strong>
-                    <br />
-                    <span className="muted">
-                      {reservation.id} / {reservation.status} / {reservation.paymentStatus}
+              {customerReservations.length > 0 ? (
+                customerReservations.map((reservation) => (
+                  <a className="row-link" href={`/app/business/reservations/${reservation.id}`} key={reservation.id}>
+                    <span>
+                      <strong>{new Date(reservation.scheduledStartAt).toLocaleString("ja-JP")}</strong>
+                      <br />
+                      <span className="muted">
+                        {reservation.id} / {reservation.status} / {reservation.paymentStatus}
+                      </span>
                     </span>
-                  </span>
-                  <span className="badge">予約詳細</span>
-                </a>
+                    <span className="badge">予約詳細</span>
+                  </a>
+                ))
+              ) : (
+                <p className="muted">この顧客に紐づく予約はまだありません。</p>
+              )}
+            </div>
+          </div>
+
+          <div className="card span-12">
+            <h3>活動タイムライン</h3>
+            <p className="muted">
+              Growth Engineが正本として持つ顧客・予約・決済の履歴です。Report本文や外部アプリの専門記録本文はコピーしません。
+            </p>
+            <div className="timeline-list">
+              {timeline.map((entry) => (
+                <div className="timeline-entry" key={entry.id}>
+                  <div>
+                    <strong>{entry.title}</strong>
+                    <p className="muted">{entry.summary}</p>
+                    <span className="muted">{new Date(entry.occurredAt).toLocaleString("ja-JP")}</span>
+                  </div>
+                  <div className="timeline-actions">
+                    {entry.statusLabel ? <span className="badge">{entry.statusLabel}</span> : null}
+                    {entry.href ? (
+                      <a className="button secondary" href={entry.href}>
+                        開く
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
