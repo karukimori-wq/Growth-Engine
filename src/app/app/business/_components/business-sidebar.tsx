@@ -3,7 +3,7 @@ import { getBusinessMenu, getProfessionalApp, type BusinessMenuKey } from "@/lib
 
 type Props = {
   studioKey?: string;
-  activeKey?: BusinessMenuKey | "customers" | "persistence";
+  activeKey?: BusinessMenuKey | "customers" | "persistence" | "launch-readiness";
 };
 
 export function BusinessSidebar({ studioKey, activeKey }: Props) {
@@ -47,6 +47,12 @@ export function BusinessSidebar({ studioKey, activeKey }: Props) {
             href="/app/business/settings/persistence"
           >
             永続化
+          </a>
+          <a
+            className={activeKey === "launch-readiness" ? "nav-link active" : "nav-link"}
+            href="/app/business/settings/launch-readiness"
+          >
+            MVP最終確認
           </a>
         </div>
       </nav>
