@@ -1,5 +1,5 @@
 import type { Customer, Payment, Reservation } from "@/domain/entities";
-import { listCustomers, listLeads, listPayments, listReservations } from "@/server/repositories";
+import { listCustomers, listLeads, listPayments, listProducts, listReservations } from "@/server/repositories";
 
 export type CustomerSalesRecord = {
   customer: Customer;
@@ -12,6 +12,7 @@ export type CustomerSalesRecord = {
 export type ReservationPaymentRecord = {
   reservation: Reservation;
   customer?: Customer;
+  product?: Awaited<ReturnType<typeof listProducts>>[number];
   payment?: Payment;
 };
 
@@ -30,11 +31,12 @@ export type BusinessMetrics = {
 };
 
 export async function getBusinessMetrics(workspaceId: string): Promise<BusinessMetrics> {
-  const [customers, leads, reservations, payments] = await Promise.all([
+  const [customers, leads, reservations, payments, products] = await Promise.all([
     listCustomers(workspaceId),
     listLeads(workspaceId),
     listReservations(workspaceId),
-    listPayments(workspaceId)
+    listPayments(workspaceId),
+    listProducts(workspaceId)
   ]);
   const paidPayments = payments.filter((payment) => payment.paymentStatus === "paid");
   const paidSalesAmount = paidPayments.reduce((total, payment) => total + payment.amount, 0);
@@ -59,6 +61,7 @@ export async function getBusinessMetrics(workspaceId: string): Promise<BusinessM
   const reservationPayments = reservations.map((reservation) => ({
     reservation,
     customer: customers.find((customer) => customer.id === reservation.customerId),
+    product: products.find((product) => product.id === reservation.productId),
     payment: payments.find((payment) => payment.reservationId === reservation.id)
   }));
 
