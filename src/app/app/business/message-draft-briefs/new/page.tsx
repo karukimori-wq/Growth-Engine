@@ -10,11 +10,17 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function safeBusinessReturnTo(value: string | undefined) {
+  return value?.startsWith("/app/business/") ? value : "/app/business/repeat";
+}
+
 export default async function MessageDraftBriefPage({ searchParams }: Props) {
   const query = await searchParams;
   const reservationId = first(query.reservationId) ?? "reservation_ref";
   const customerId = first(query.customerId) ?? "customer_ref";
   const followupId = first(query.followupId) ?? "followup_ref";
+  const purpose = first(query.purpose) ?? "followup_message";
+  const returnTo = safeBusinessReturnTo(first(query.returnTo));
 
   return (
     <div className="shell">
@@ -25,8 +31,8 @@ export default async function MessageDraftBriefPage({ searchParams }: Props) {
             <p className="eyebrow">Growth Engine / MessageDraft</p>
             <h2 className="page-title">連絡文案の依頼</h2>
           </div>
-          <a className="button secondary" href="/app/business/repeat">
-            リピートへ戻る
+          <a className="button secondary" href={returnTo}>
+            戻る
           </a>
         </header>
 
@@ -34,7 +40,7 @@ export default async function MessageDraftBriefPage({ searchParams }: Props) {
           <div className="card span-6">
             <h3>依頼内容</h3>
             <dl className="definition-list compact">
-              <dt>purpose</dt><dd>followup_message</dd>
+              <dt>purpose</dt><dd>{purpose}</dd>
               <dt>customerId</dt><dd>{customerId}</dd>
               <dt>reservationId</dt><dd>{reservationId}</dd>
               <dt>followupId</dt><dd>{followupId}</dd>
@@ -53,8 +59,8 @@ export default async function MessageDraftBriefPage({ searchParams }: Props) {
               <button className="button" type="submit">
                 MessageDraftを作成
               </button>
-              <a className="button secondary" href="/app/business/referrals">
-                紹介へ戻る
+              <a className="button secondary" href={returnTo}>
+                戻る
               </a>
             </form>
           </div>
