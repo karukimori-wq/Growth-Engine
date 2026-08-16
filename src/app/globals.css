@@ -242,6 +242,14 @@ textarea {
   margin: 18px 0;
 }
 
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
 .field-label {
   display: grid;
   gap: 6px;
@@ -258,6 +266,10 @@ textarea {
   background: var(--surface);
   color: var(--text);
   padding: 10px 12px;
+}
+
+.field-label.compact {
+  min-width: 0;
 }
 
 .definition-list {
@@ -343,6 +355,10 @@ textarea {
 
   .definition-list,
   .definition-list.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar {
     grid-template-columns: 1fr;
   }
 }
