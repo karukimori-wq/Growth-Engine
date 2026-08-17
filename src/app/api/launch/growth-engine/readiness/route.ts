@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { demoWorkspace } from "@/lib/mock-data";
 import { createStripeClient } from "@/integrations/stripe";
 import { isProductionAuthConfigured } from "@/server/auth-session";
-import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { checkPostgresHealth } from "@/server/postgres-health";
 
 type CheckStatus = "success" | "warning" | "error" | "skipped";
 
@@ -10,8 +10,8 @@ const checkedAt = () => new Date().toISOString();
 
 export async function GET() {
   const stripe = createStripeClient();
-  const repositoryDriver = getGrowthRepositoryDriver();
-  const postgresConfigured = hasPostgresEnvironment();
+  const postgresHealth = await checkPostgresHealth();
+  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
   const checkout = await stripe.createCheckoutSession({
     workspaceId: demoWorkspace.id,
     customerId: "cus_001",
@@ -37,13 +37,12 @@ export async function GET() {
     },
     {
       id: "public_booking.to_reservation",
-      status: repositoryDriver === "postgres" && postgresConfigured ? "success" : "warning",
+      status: databaseBackedPersistenceReady ? "success" : "error",
       evidence:
-        "POST /api/public/bookings creates a Customer and requested Reservation through the Growth Repository, then redirects to /public/booking/confirmed.",
-      issue:
-        repositoryDriver === "postgres" && postgresConfigured
-          ? null
-          : "Database-backed Customer and Reservation persistence is implemented, but production Postgres environment variables are not configured."
+        "POST /api/public/bookings creates a Customer and requested Reservation through the Growth Repository used by /app/business/reservations.",
+      issue: databaseBackedPersistenceReady
+        ? null
+        : postgresHealth.issue ?? "Database-backed Customer and Reservation persistence is not ready."
     },
     {
       id: "auth.workspace_isolation",
@@ -80,10 +79,12 @@ export async function GET() {
       ownerUserId: demoWorkspace.ownerUserId
     },
     persistence: {
-      repositoryDriver,
-      postgresConfigured,
-      customerPersistence: repositoryDriver === "postgres" ? "postgres" : "mock",
-      reservationPersistence: repositoryDriver === "postgres" ? "postgres" : "mock"
+      repositoryDriver: postgresHealth.repositoryDriver,
+      postgresConfigured: postgresHealth.postgresConfigured,
+      postgresReachable: postgresHealth.postgresReachable,
+      customerPersistence: databaseBackedPersistenceReady ? "postgres" : "mock",
+      reservationPersistence: databaseBackedPersistenceReady ? "postgres" : "mock",
+      databaseBackedPersistenceReady
     },
     dataSafety: {
       storesCardData: false,
