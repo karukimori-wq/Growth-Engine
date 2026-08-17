@@ -1,22 +1,31 @@
 import { NextResponse } from "next/server";
 import { appName, getTimestamp } from "@/server/app-metadata";
 import { getPersistencePreflight } from "@/server/persistence-preflight";
+import { checkPostgresHealth } from "@/server/postgres-health";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const preflight = getPersistencePreflight();
+  const [preflight, postgresHealth] = await Promise.all([
+    Promise.resolve(getPersistencePreflight()),
+    checkPostgresHealth()
+  ]);
+  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
+  const status = databaseBackedPersistenceReady ? "success" : postgresHealth.status;
 
   return NextResponse.json(
     {
       appName,
-      status: preflight.status,
-      checkedAt: preflight.checkedAt,
-      repositoryDriver: preflight.repositoryDriver,
-      postgresConfigured: preflight.postgresConfigured,
-      databaseBackedPersistenceReady: preflight.databaseBackedPersistenceReady,
-      blockedUserFlows: preflight.blockedUserFlows,
+      status,
+      checkedAt: getTimestamp(),
+      repositoryDriver: postgresHealth.repositoryDriver,
+      postgresConfigured: postgresHealth.postgresConfigured,
+      postgresReachable: postgresHealth.postgresReachable,
+      databaseBackedPersistenceReady,
+      blockedUserFlows: databaseBackedPersistenceReady ? [] : preflight.blockedUserFlows,
       activePersistence: {
-        customer: preflight.repositoryDriver === "postgres" ? "postgres" : "mock",
-        reservation: preflight.repositoryDriver === "postgres" ? "postgres" : "mock",
+        customer: databaseBackedPersistenceReady ? "postgres" : "mock",
+        reservation: databaseBackedPersistenceReady ? "postgres" : "mock",
         payment: "growth-engine",
         sales: "growth-engine"
       },
@@ -28,11 +37,21 @@ export async function GET() {
         growthRepositoryDriverConfigured: preflight.env.growthRepositoryDriverConfigured,
         postgresConnectionConfigured: preflight.env.postgresConnectionConfigured
       },
+      postgresHealth: {
+        status: postgresHealth.status,
+        errorCode: postgresHealth.errorCode,
+        issue: postgresHealth.issue,
+        envValuesExposed: postgresHealth.envValuesExposed
+      },
       verification: preflight.verification,
       dataSafety: preflight.dataSafety,
-      nextAction: preflight.nextActions[0] ?? null,
-      nextActions: preflight.nextActions,
-      issues: preflight.issues,
+      nextAction: databaseBackedPersistenceReady
+        ? "Run POST /api/persistence/roundtrip from an owner session."
+        : preflight.nextActions[0] ?? null,
+      nextActions: databaseBackedPersistenceReady
+        ? ["Run POST /api/persistence/roundtrip from an owner session."]
+        : preflight.nextActions,
+      issues: databaseBackedPersistenceReady ? [] : [postgresHealth.issue ?? preflight.issues[0]].filter(Boolean),
       timestamp: getTimestamp()
     },
     { status: 200 }
