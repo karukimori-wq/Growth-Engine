@@ -4,5 +4,7 @@ import { getMvpFinalReadiness } from "@/server/mvp-final-readiness";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json(getMvpFinalReadiness(), { status: 200 });
+  const readiness = await getMvpFinalReadiness();
+
+  return NextResponse.json(readiness, { status: 200 });
 }
