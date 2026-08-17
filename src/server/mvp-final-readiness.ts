@@ -1,6 +1,6 @@
 import { getContractStatus, getTimestamp } from "@/server/app-metadata";
 import { isProductionAuthConfigured } from "@/server/auth-session";
-import { getPersistencePreflight } from "@/server/persistence-preflight";
+import { checkPostgresHealth } from "@/server/postgres-health";
 
 type StepStatus = "success" | "warning" | "error" | "skipped";
 
@@ -42,11 +42,9 @@ function summarize(steps: FinalReadinessStep[]): Record<StepStatus, number> {
   );
 }
 
-export function getMvpFinalReadiness(): MvpFinalReadiness {
-  const persistencePreflight = getPersistencePreflight();
-  const repositoryDriver = persistencePreflight.repositoryDriver;
-  const postgresConfigured = persistencePreflight.postgresConfigured;
-  const databaseBackedPersistenceReady = persistencePreflight.databaseBackedPersistenceReady;
+export async function getMvpFinalReadiness(): Promise<MvpFinalReadiness> {
+  const postgresHealth = await checkPostgresHealth();
+  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
   const productionAuthConfigured = isProductionAuthConfigured();
   const contractStatus = getContractStatus();
   const contractsReady =
@@ -58,37 +56,37 @@ export function getMvpFinalReadiness(): MvpFinalReadiness {
 
   const steps: FinalReadinessStep[] = [
     {
-      id: "postgres.production_env",
-      title: "Postgres Production env設定",
-      status: databaseBackedPersistenceReady ? "success" : "warning",
-      evidence: `repositoryDriver=${repositoryDriver}; postgresConfigured=${postgresConfigured}; preflight=${persistencePreflight.verification.preflightEndpoint}`,
+      id: "postgres.production_runtime",
+      title: "Postgres Production runtime確認",
+      status: databaseBackedPersistenceReady ? "success" : "error",
+      evidence: `repositoryDriver=${postgresHealth.repositoryDriver}; postgresConfigured=${postgresHealth.postgresConfigured}; postgresReachable=${postgresHealth.postgresReachable}`,
       issue: databaseBackedPersistenceReady
         ? null
-        : persistencePreflight.issues[0] ?? "Production DB persistence is not active.",
+        : postgresHealth.issue ?? "Production DB persistence is not active.",
       nextAction: databaseBackedPersistenceReady
         ? null
-        : persistencePreflight.nextActions.join(" ")
+        : "Set GROWTH_REPOSITORY_DRIVER=postgres and one supported Postgres URL env in Vercel Production, then redeploy."
     },
     {
       id: "db.roundtrip_verification",
       title: "DB保存 roundtrip確認",
-      status: databaseBackedPersistenceReady ? "success" : "warning",
-      evidence: `${persistencePreflight.verification.roundtripEndpoint} and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.`,
+      status: databaseBackedPersistenceReady ? "success" : "error",
+      evidence: "POST /api/persistence/roundtrip and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.",
       issue: databaseBackedPersistenceReady
         ? null
-        : "Roundtrip can be executed, but it will return warning/skipped until Postgres env is configured.",
+        : "Roundtrip cannot be treated as ready until Postgres runtime is active and reachable.",
       nextAction: databaseBackedPersistenceReady
         ? "Run the roundtrip from /app/business/settings/persistence with an owner session."
-        : "Configure Postgres env first, then run the roundtrip UI."
+        : "Configure Postgres runtime first, then run the roundtrip UI."
     },
     {
       id: "public_booking.to_business_reservation",
       title: "公開予約から予約一覧反映",
-      status: databaseBackedPersistenceReady ? "success" : "warning",
+      status: databaseBackedPersistenceReady ? "success" : "error",
       evidence: "POST /api/public/bookings creates Customer and Reservation through the shared Growth Repository used by /app/business/reservations.",
       issue: databaseBackedPersistenceReady
         ? null
-        : "Implementation uses the shared repository, but cross-browser persistence still depends on activating Postgres.",
+        : "Implementation uses the shared repository, but cross-browser persistence requires active Postgres runtime.",
       nextAction: databaseBackedPersistenceReady
         ? "Create one public booking and confirm it appears in /app/business/reservations and detail opens."
         : "Activate Postgres and repeat the public booking test."
@@ -96,11 +94,11 @@ export function getMvpFinalReadiness(): MvpFinalReadiness {
     {
       id: "customer_management.db_backed",
       title: "顧客管理の本番DB確認",
-      status: databaseBackedPersistenceReady ? "success" : "warning",
+      status: databaseBackedPersistenceReady ? "success" : "error",
       evidence: "/app/business/customers, detail, and edit screens use the Growth Repository customer methods.",
       issue: databaseBackedPersistenceReady
         ? null
-        : "Customer screens are implemented, but persistent DB-backed behavior still depends on Postgres env.",
+        : "Customer screens are implemented, but production persistence requires active Postgres runtime.",
       nextAction: databaseBackedPersistenceReady
         ? "Create, list, detail, and edit a customer after owner sign-in."
         : "Activate Postgres before treating customer data as production-persistent."
