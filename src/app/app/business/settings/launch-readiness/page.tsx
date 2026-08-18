@@ -7,8 +7,8 @@ function badgeClass(status: string) {
   return status === "success" ? "badge" : "badge warning";
 }
 
-export default function LaunchReadinessPage() {
-  const readiness = getMvpFinalReadiness();
+export default async function LaunchReadinessPage() {
+  const readiness = await getMvpFinalReadiness();
 
   return (
     <div className="shell">
