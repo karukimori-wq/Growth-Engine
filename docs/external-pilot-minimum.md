@@ -65,6 +65,10 @@ POST /api/persistence/roundtrip
 GET /api/launch/growth-engine/external-pilot-readiness
 ```
 
+## Production deploy note
+
+Last source update for pilot gate: 2026-08-18T09:09:00+09:00.
+
 ## Data boundary
 
 Do not send the following outside Growth Engine during pilot:
