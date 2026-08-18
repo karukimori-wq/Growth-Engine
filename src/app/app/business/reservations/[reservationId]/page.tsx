@@ -57,6 +57,7 @@ export default async function ReservationDetailPage({ params }: Props) {
   const reservationLabel = getBusinessMenuLabel("reservations", professionalApp.studioKey);
   const businessAction = getBusinessActionForStudio(reservation.professionalStudioType);
   const customerId = reservation.customerId ?? "customer_reference_pending";
+  const followupId = `followup_${reservation.id}_post_session`;
   const actionHref = reservation.professionalStudioType === "numeria"
     ? createNumeriaStartUrl(reservation.id, customerId, reservation.workspaceId, practitionerUserId)
     : businessAction.href ?? `/app/professional/${professionalApp.studioKey}`;
@@ -128,19 +129,19 @@ export default async function ReservationDetailPage({ params }: Props) {
               ) : null}
               <a
                 className="button secondary"
-                href={`/app/business/followups/followup_${reservation.id}_post_session?reservationId=${reservation.id}&customerId=${customerId}`}
+                href={`/app/business/followups/${followupId}?reservationId=${reservation.id}&customerId=${customerId}`}
               >
                 フォローを確認
               </a>
               <a
                 className="button secondary"
-                href={`/app/business/post-draft-briefs/new?followupId=${mvpFollowupContext.followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
+                href={`/app/business/post-draft-briefs/new?followupId=${followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
               >
                 投稿案を依頼
               </a>
               <a
                 className="button secondary"
-                href={`/app/business/message-draft-briefs/new?followupId=${mvpFollowupContext.followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
+                href={`/app/business/message-draft-briefs/new?followupId=${followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
               >
                 連絡文案を依頼
               </a>
