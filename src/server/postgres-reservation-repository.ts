@@ -1,5 +1,5 @@
-import { sql } from "@vercel/postgres";
 import type { Reservation } from "@/domain/entities";
+import { queryPostgres } from "@/server/postgres-db";
 import type { CreateReservationInput } from "@/server/repositories";
 
 type ReservationRow = {
@@ -53,7 +53,7 @@ function toReservation(row: ReservationRow): Reservation {
 }
 
 async function ensureReservationSchema() {
-  schemaReady ??= sql`
+  schemaReady ??= queryPostgres(`
     CREATE TABLE IF NOT EXISTS growth_reservations (
       id TEXT PRIMARY KEY,
       workspace_id TEXT NOT NULL,
@@ -72,9 +72,9 @@ async function ensureReservationSchema() {
       created_at TIMESTAMPTZ NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL
     )
-  `.then(async () => {
-    await sql`CREATE INDEX IF NOT EXISTS growth_reservations_workspace_idx ON growth_reservations (workspace_id, scheduled_start_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS growth_reservations_customer_idx ON growth_reservations (workspace_id, customer_id)`;
+  `).then(async () => {
+    await queryPostgres("CREATE INDEX IF NOT EXISTS growth_reservations_workspace_idx ON growth_reservations (workspace_id, scheduled_start_at DESC)");
+    await queryPostgres("CREATE INDEX IF NOT EXISTS growth_reservations_customer_idx ON growth_reservations (workspace_id, customer_id)");
   });
 
   return schemaReady;
@@ -83,12 +83,15 @@ async function ensureReservationSchema() {
 export async function listPostgresReservations(workspaceId: string): Promise<Reservation[]> {
   await ensureReservationSchema();
 
-  const result = await sql<ReservationRow>`
+  const result = await queryPostgres<ReservationRow>(
+    `
     SELECT *
     FROM growth_reservations
-    WHERE workspace_id = ${workspaceId}
+    WHERE workspace_id = $1
     ORDER BY scheduled_start_at ASC
-  `;
+    `,
+    [workspaceId]
+  );
 
   return result.rows.map(toReservation);
 }
@@ -99,13 +102,16 @@ export async function findPostgresReservation(
 ): Promise<Reservation | undefined> {
   await ensureReservationSchema();
 
-  const result = await sql<ReservationRow>`
+  const result = await queryPostgres<ReservationRow>(
+    `
     SELECT *
     FROM growth_reservations
-    WHERE workspace_id = ${workspaceId}
-      AND id = ${reservationId}
+    WHERE workspace_id = $1
+      AND id = $2
     LIMIT 1
-  `;
+    `,
+    [workspaceId, reservationId]
+  );
 
   return result.rows[0] ? toReservation(result.rows[0]) : undefined;
 }
@@ -121,7 +127,8 @@ export async function createPostgresReservation(input: CreateReservationInput): 
     ...input
   };
 
-  const result = await sql<ReservationRow>`
+  const result = await queryPostgres<ReservationRow>(
+    `
     INSERT INTO growth_reservations (
       id,
       workspace_id,
@@ -140,25 +147,44 @@ export async function createPostgresReservation(input: CreateReservationInput): 
       created_at,
       updated_at
     ) VALUES (
-      ${reservation.id},
-      ${reservation.workspaceId},
-      ${reservation.leadId ?? null},
-      ${reservation.customerId ?? null},
-      ${reservation.productId},
-      ${reservation.professionalStudioType},
-      ${reservation.scheduledStartAt},
-      ${reservation.scheduledEndAt},
-      ${reservation.status},
-      ${reservation.sourceChannel ?? null},
-      ${reservation.campaignId ?? null},
-      ${reservation.contentId ?? null},
-      ${reservation.paymentStatus},
-      ${reservation.sessionId ?? null},
-      ${reservation.createdAt},
-      ${reservation.updatedAt}
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7,
+      $8,
+      $9,
+      $10,
+      $11,
+      $12,
+      $13,
+      $14,
+      $15,
+      $16
     )
     RETURNING *
-  `;
+    `,
+    [
+      reservation.id,
+      reservation.workspaceId,
+      reservation.leadId ?? null,
+      reservation.customerId ?? null,
+      reservation.productId,
+      reservation.professionalStudioType,
+      reservation.scheduledStartAt,
+      reservation.scheduledEndAt,
+      reservation.status,
+      reservation.sourceChannel ?? null,
+      reservation.campaignId ?? null,
+      reservation.contentId ?? null,
+      reservation.paymentStatus,
+      reservation.sessionId ?? null,
+      reservation.createdAt,
+      reservation.updatedAt
+    ]
+  );
 
   return toReservation(result.rows[0]);
 }
@@ -174,14 +200,17 @@ export async function updatePostgresReservationPaymentStatus(
 
   await ensureReservationSchema();
 
-  const result = await sql<ReservationRow>`
+  const result = await queryPostgres<ReservationRow>(
+    `
     UPDATE growth_reservations
-    SET payment_status = ${paymentStatus},
-        updated_at = ${new Date().toISOString()}
-    WHERE workspace_id = ${workspaceId}
-      AND id = ${reservationId}
+    SET payment_status = $1,
+        updated_at = $2
+    WHERE workspace_id = $3
+      AND id = $4
     RETURNING *
-  `;
+    `,
+    [paymentStatus, new Date().toISOString(), workspaceId, reservationId]
+  );
 
   return result.rows[0] ? toReservation(result.rows[0]) : undefined;
 }
