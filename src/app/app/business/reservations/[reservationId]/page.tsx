@@ -126,7 +126,12 @@ export default async function ReservationDetailPage({ params }: Props) {
                   お客様詳細
                 </a>
               ) : null}
-              <a className="button secondary" href={`/app/business/followups/${mvpFollowupContext.followupId}`}>フォローを確認</a>
+              <a
+                className="button secondary"
+                href={`/app/business/followups/followup_${reservation.id}_post_session?reservationId=${reservation.id}&customerId=${customerId}`}
+              >
+                フォローを確認
+              </a>
               <a
                 className="button secondary"
                 href={`/app/business/post-draft-briefs/new?followupId=${mvpFollowupContext.followupId}&reservationId=${reservation.id}&customerId=${customerId}`}
