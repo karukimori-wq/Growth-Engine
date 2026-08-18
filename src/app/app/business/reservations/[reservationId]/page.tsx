@@ -20,6 +20,29 @@ function formatDateTime(value: string) {
   });
 }
 
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    requested: "受付済み",
+    confirmed: "確定",
+    cancelled: "キャンセル",
+    completed: "完了",
+    no_show: "無断キャンセル"
+  };
+
+  return labels[status] ?? status;
+}
+
+function paymentStatusLabel(status: string | undefined) {
+  const labels: Record<string, string> = {
+    unpaid: "未払い",
+    paid: "支払い済み",
+    refunded: "返金済み",
+    cancelled: "キャンセル"
+  };
+
+  return labels[status ?? ""] ?? "未設定";
+}
+
 export default async function ReservationDetailPage({ params }: Props) {
   const { reservationId } = await params;
   const record = await getBusinessReservation(reservationId, demoWorkspace.id);
@@ -91,6 +114,10 @@ export default async function ReservationDetailPage({ params }: Props) {
               <dt>メニュー</dt><dd>{product?.name ?? reservation.productId}</dd>
               <dt>日時</dt><dd>{formatDateTime(reservation.scheduledStartAt)}</dd>
               <dt>Professional App</dt><dd>{professionalApp.studioName}</dd>
+              <dt>予約状態</dt><dd>{statusLabel(reservation.status)}</dd>
+              <dt>支払い状態</dt><dd>{paymentStatusLabel(reservation.paymentStatus)}</dd>
+              <dt>流入元</dt><dd>{reservation.sourceChannel ?? "未設定"}</dd>
+              <dt>金額</dt><dd>{product ? `${product.price.toLocaleString("ja-JP")} ${product.workspaceId === demoWorkspace.id ? demoWorkspace.currency : ""}` : "未設定"}</dd>
             </dl>
             <div className="action-row">
               <a className="button" href={actionHref}>{businessAction.label}</a>
@@ -119,6 +146,13 @@ export default async function ReservationDetailPage({ params }: Props) {
             <h3>Professional Appへ渡す内容</h3>
             <pre className="code-block">{JSON.stringify(handoffPayload, null, 2)}</pre>
             <p className="muted">paymentStatus、salesAmount、Stripe情報、顧客マスター全文、機密メモ全文、売上正本、支払い正本は送信しません。</p>
+            <div className="divider" />
+            <h3>Growth Engineだけで保持</h3>
+            <dl className="definition-list compact">
+              <dt>支払い状態</dt><dd>{paymentStatusLabel(reservation.paymentStatus)}</dd>
+              <dt>売上金額</dt><dd>{product ? `${product.price.toLocaleString("ja-JP")} ${demoWorkspace.currency}` : "未設定"}</dd>
+              <dt>正本</dt><dd>Growth Engine</dd>
+            </dl>
           </div>
         </section>
       </main>
