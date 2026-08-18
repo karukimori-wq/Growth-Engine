@@ -54,9 +54,14 @@ export default async function CustomersPage({ searchParams: _searchParams }: Pro
             <p className="eyebrow">Growth Engine / お客様</p>
             <h2 className="page-title">お客様一覧</h2>
           </div>
-          <a className="button secondary" href="/app/business/reservations">
-            予約を確認
-          </a>
+          <div className="action-row">
+            <a className="button" href="/app/business/customers/new">
+              新しいお客様を登録
+            </a>
+            <a className="button secondary" href="/app/business/reservations">
+              予約を確認
+            </a>
+          </div>
         </header>
 
         <section className="card">
