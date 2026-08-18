@@ -1,5 +1,5 @@
-import { sql } from "@vercel/postgres";
 import { getTimestamp } from "@/server/app-metadata";
+import { queryPostgres } from "@/server/postgres-db";
 import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
 
 export type PostgresHealthStatus = "success" | "warning" | "error";
@@ -50,7 +50,7 @@ export async function checkPostgresHealth(): Promise<PostgresHealth> {
   }
 
   try {
-    await sql`SELECT 1 AS ok`;
+    await queryPostgres("SELECT 1 AS ok");
 
     return {
       status: "success",
