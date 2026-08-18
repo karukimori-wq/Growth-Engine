@@ -1,5 +1,5 @@
-import { sql } from "@vercel/postgres";
 import type { Customer } from "@/domain/entities";
+import { queryPostgres } from "@/server/postgres-db";
 import type { CreateCustomerInput, UpdateCustomerInput } from "@/server/repositories";
 
 type CustomerRow = {
@@ -85,7 +85,7 @@ function removeUndefinedValues<T extends Record<string, unknown>>(input: T): Par
 }
 
 async function ensureCustomerSchema() {
-  schemaReady ??= sql`
+  schemaReady ??= queryPostgres(`
     CREATE TABLE IF NOT EXISTS growth_customers (
       id TEXT PRIMARY KEY,
       workspace_id TEXT NOT NULL,
@@ -108,9 +108,9 @@ async function ensureCustomerSchema() {
       created_at TIMESTAMPTZ NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL
     )
-  `.then(async () => {
-    await sql`CREATE INDEX IF NOT EXISTS growth_customers_workspace_idx ON growth_customers (workspace_id, created_at DESC)`;
-    await sql`CREATE UNIQUE INDEX IF NOT EXISTS growth_customers_workspace_customer_number_idx ON growth_customers (workspace_id, customer_number)`;
+  `).then(async () => {
+    await queryPostgres("CREATE INDEX IF NOT EXISTS growth_customers_workspace_idx ON growth_customers (workspace_id, created_at DESC)");
+    await queryPostgres("CREATE UNIQUE INDEX IF NOT EXISTS growth_customers_workspace_customer_number_idx ON growth_customers (workspace_id, customer_number)");
   });
 
   return schemaReady;
@@ -119,12 +119,15 @@ async function ensureCustomerSchema() {
 export async function listPostgresCustomers(workspaceId: string): Promise<Customer[]> {
   await ensureCustomerSchema();
 
-  const result = await sql<CustomerRow>`
+  const result = await queryPostgres<CustomerRow>(
+    `
     SELECT *
     FROM growth_customers
-    WHERE workspace_id = ${workspaceId}
+    WHERE workspace_id = $1
     ORDER BY created_at DESC
-  `;
+    `,
+    [workspaceId]
+  );
 
   return result.rows.map(toCustomer);
 }
@@ -135,13 +138,16 @@ export async function findPostgresCustomer(
 ): Promise<Customer | undefined> {
   await ensureCustomerSchema();
 
-  const result = await sql<CustomerRow>`
+  const result = await queryPostgres<CustomerRow>(
+    `
     SELECT *
     FROM growth_customers
-    WHERE workspace_id = ${workspaceId}
-      AND id = ${customerId}
+    WHERE workspace_id = $1
+      AND id = $2
     LIMIT 1
-  `;
+    `,
+    [workspaceId, customerId]
+  );
 
   return result.rows[0] ? toCustomer(result.rows[0]) : undefined;
 }
@@ -158,7 +164,8 @@ export async function createPostgresCustomer(input: CreateCustomerInput): Promis
     ...input
   };
 
-  const result = await sql<CustomerRow>`
+  const result = await queryPostgres<CustomerRow>(
+    `
     INSERT INTO growth_customers (
       id,
       workspace_id,
@@ -181,29 +188,52 @@ export async function createPostgresCustomer(input: CreateCustomerInput): Promis
       created_at,
       updated_at
     ) VALUES (
-      ${customer.id},
-      ${customer.workspaceId},
-      ${customer.leadId ?? null},
-      ${customer.customerNumber},
-      ${customer.name ?? null},
-      ${customer.displayName},
-      ${JSON.stringify(customer.contactInformation)}::jsonb,
-      ${customer.lineUserId ?? null},
-      ${JSON.stringify(customer.snsAccounts)}::jsonb,
-      ${customer.sourceChannel ?? null},
-      ${customer.sourceCampaignId ?? null},
-      ${customer.sourceContentId ?? null},
-      ${customer.referredByCustomerId ?? null},
-      ${customer.customerStatus},
-      ${customer.firstPurchaseAt ?? null},
-      ${customer.lastPurchaseAt ?? null},
-      ${customer.totalRevenue},
-      ${customer.purchaseCount},
-      ${customer.createdAt},
-      ${customer.updatedAt}
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7::jsonb,
+      $8,
+      $9::jsonb,
+      $10,
+      $11,
+      $12,
+      $13,
+      $14,
+      $15,
+      $16,
+      $17,
+      $18,
+      $19,
+      $20
     )
     RETURNING *
-  `;
+    `,
+    [
+      customer.id,
+      customer.workspaceId,
+      customer.leadId ?? null,
+      customer.customerNumber,
+      customer.name ?? null,
+      customer.displayName,
+      JSON.stringify(customer.contactInformation),
+      customer.lineUserId ?? null,
+      JSON.stringify(customer.snsAccounts),
+      customer.sourceChannel ?? null,
+      customer.sourceCampaignId ?? null,
+      customer.sourceContentId ?? null,
+      customer.referredByCustomerId ?? null,
+      customer.customerStatus,
+      customer.firstPurchaseAt ?? null,
+      customer.lastPurchaseAt ?? null,
+      customer.totalRevenue,
+      customer.purchaseCount,
+      customer.createdAt,
+      customer.updatedAt
+    ]
+  );
 
   return toCustomer(result.rows[0]);
 }
@@ -230,28 +260,49 @@ export async function updatePostgresCustomer(
     updatedAt: new Date().toISOString()
   };
 
-  const result = await sql<CustomerRow>`
+  const result = await queryPostgres<CustomerRow>(
+    `
     UPDATE growth_customers
     SET
-      name = ${updatedCustomer.name ?? null},
-      display_name = ${updatedCustomer.displayName},
-      contact_information = ${JSON.stringify(updatedCustomer.contactInformation)}::jsonb,
-      line_user_id = ${updatedCustomer.lineUserId ?? null},
-      sns_accounts = ${JSON.stringify(updatedCustomer.snsAccounts)}::jsonb,
-      source_channel = ${updatedCustomer.sourceChannel ?? null},
-      source_campaign_id = ${updatedCustomer.sourceCampaignId ?? null},
-      source_content_id = ${updatedCustomer.sourceContentId ?? null},
-      referred_by_customer_id = ${updatedCustomer.referredByCustomerId ?? null},
-      customer_status = ${updatedCustomer.customerStatus},
-      first_purchase_at = ${updatedCustomer.firstPurchaseAt ?? null},
-      last_purchase_at = ${updatedCustomer.lastPurchaseAt ?? null},
-      total_revenue = ${updatedCustomer.totalRevenue},
-      purchase_count = ${updatedCustomer.purchaseCount},
-      updated_at = ${updatedCustomer.updatedAt}
-    WHERE workspace_id = ${workspaceId}
-      AND id = ${customerId}
+      name = $1,
+      display_name = $2,
+      contact_information = $3::jsonb,
+      line_user_id = $4,
+      sns_accounts = $5::jsonb,
+      source_channel = $6,
+      source_campaign_id = $7,
+      source_content_id = $8,
+      referred_by_customer_id = $9,
+      customer_status = $10,
+      first_purchase_at = $11,
+      last_purchase_at = $12,
+      total_revenue = $13,
+      purchase_count = $14,
+      updated_at = $15
+    WHERE workspace_id = $16
+      AND id = $17
     RETURNING *
-  `;
+    `,
+    [
+      updatedCustomer.name ?? null,
+      updatedCustomer.displayName,
+      JSON.stringify(updatedCustomer.contactInformation),
+      updatedCustomer.lineUserId ?? null,
+      JSON.stringify(updatedCustomer.snsAccounts),
+      updatedCustomer.sourceChannel ?? null,
+      updatedCustomer.sourceCampaignId ?? null,
+      updatedCustomer.sourceContentId ?? null,
+      updatedCustomer.referredByCustomerId ?? null,
+      updatedCustomer.customerStatus,
+      updatedCustomer.firstPurchaseAt ?? null,
+      updatedCustomer.lastPurchaseAt ?? null,
+      updatedCustomer.totalRevenue,
+      updatedCustomer.purchaseCount,
+      updatedCustomer.updatedAt,
+      workspaceId,
+      customerId
+    ]
+  );
 
   return result.rows[0] ? toCustomer(result.rows[0]) : undefined;
 }
