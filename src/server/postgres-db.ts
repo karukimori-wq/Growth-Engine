@@ -11,6 +11,19 @@ function getConnectionString() {
   );
 }
 
+function normalizeConnectionString(connectionString: string) {
+  try {
+    const url = new URL(connectionString);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("sslcert");
+    url.searchParams.delete("sslkey");
+    url.searchParams.delete("sslrootcert");
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
 export function hasPostgresConnectionString() {
   return Boolean(getConnectionString());
 }
@@ -23,7 +36,7 @@ function getPool() {
   }
 
   pool ??= new Pool({
-    connectionString,
+    connectionString: normalizeConnectionString(connectionString),
     ssl: connectionString.includes("sslmode=disable") ? undefined : { rejectUnauthorized: false },
     max: 3
   });
