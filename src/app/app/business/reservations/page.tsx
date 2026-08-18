@@ -1,7 +1,7 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessMenu, getBusinessMenuLabel, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
-import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { checkPostgresHealth } from "@/server/postgres-health";
 
 export const dynamic = "force-dynamic";
 
@@ -26,14 +26,36 @@ function matchesText(value: string | undefined, query: string) {
   return value?.toLowerCase().includes(query.toLowerCase()) ?? false;
 }
 
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    requested: "受付済み",
+    confirmed: "確定",
+    cancelled: "キャンセル",
+    completed: "完了",
+    no_show: "無断キャンセル"
+  };
+
+  return labels[status] ?? status;
+}
+
+function paymentStatusLabel(status: string | undefined) {
+  const labels: Record<string, string> = {
+    unpaid: "未払い",
+    paid: "支払い済み",
+    refunded: "返金済み",
+    cancelled: "キャンセル"
+  };
+
+  return labels[status ?? ""] ?? "未設定";
+}
+
 export default async function ReservationsPage({ searchParams: _searchParams }: Props) {
   const query = await _searchParams;
   const currentProfessionalApp = getProfessionalApp(first(query.studioKey) ?? demoWorkspace.professionalStudioType);
   const businessMenu = getBusinessMenu(currentProfessionalApp.studioKey);
   const reservationLabel = getBusinessMenuLabel("reservations", currentProfessionalApp.studioKey);
-  const repositoryDriver = getGrowthRepositoryDriver();
-  const postgresConfigured = hasPostgresEnvironment();
-  const databaseBackedPersistenceReady = repositoryDriver === "postgres" && postgresConfigured;
+  const postgresHealth = await checkPostgresHealth();
+  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
   const records = await listBusinessReservations(demoWorkspace.id);
   const statusFilter = first(query.status) ?? "all";
   const paymentFilter = first(query.paymentStatus) ?? "all";
@@ -91,11 +113,12 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
             <p className="eyebrow">保存設定の確認が必要</p>
             <h3>本番DB保存がまだ有効ではありません</h3>
             <p className="muted">
-              現在は {repositoryDriver} repository で動作しています。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の予約一覧表示は保証できません。
+              現在は {postgresHealth.repositoryDriver} repository で動作しています。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の予約一覧表示は保証できません。
             </p>
             <p className="muted">
               Vercel Production に <code>GROWTH_REPOSITORY_DRIVER=postgres</code> と Postgres 接続envを設定し、redeploy後に <code>/api/persistence/status</code> を確認してください。
             </p>
+            {postgresHealth.issue ? <p className="muted">現在の確認結果: {postgresHealth.issue}</p> : null}
           </section>
         ) : null}
 
@@ -175,8 +198,13 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
                     {customer?.displayName ?? reservation.customerId ?? "公開予約のお客様"} /{" "}
                     {product?.name ?? reservation.productId}
                   </span>
+                  <br />
+                  <span className="muted">
+                    {statusLabel(reservation.status)} / {paymentStatusLabel(reservation.paymentStatus)} /{" "}
+                    {reservation.sourceChannel ?? "流入元未設定"}
+                  </span>
                 </span>
-                <span className="badge">詳細</span>
+                <span className="badge">{paymentStatusLabel(reservation.paymentStatus)}</span>
               </a>
             ))}
           </div>
