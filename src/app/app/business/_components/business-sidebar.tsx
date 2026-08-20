@@ -1,5 +1,5 @@
 import { demoWorkspace } from "@/lib/mock-data";
-import { getBusinessMenu, getProfessionalApp, type BusinessMenuKey } from "@/lib/professional-app-registry";
+import { getBusinessMenu, getProfessionalApp, professionalApps, type BusinessMenuKey } from "@/lib/professional-app-registry";
 
 type Props = {
   studioKey?: string;
@@ -19,6 +19,18 @@ export function BusinessSidebar({ studioKey, activeKey }: Props) {
           <a className="nav-link" href={`/app/professional/${professionalApp.studioKey}`}>
             {professionalApp.studioName}
           </a>
+        </div>
+        <div className="nav-group">
+          <p className="nav-title">Professional App</p>
+          {professionalApps.map((item) => (
+            <a
+              className={item.studioKey === professionalApp.studioKey ? "nav-link active" : "nav-link"}
+              href={`/app/business?studioKey=${item.studioKey}`}
+              key={item.studioKey}
+            >
+              {item.studioName}
+            </a>
+          ))}
         </div>
         <div className="nav-group">
           <p className="nav-title">Business</p>
