@@ -1,148 +1,28 @@
 import { getContractStatus, getTimestamp } from "@/server/app-metadata";
 import { isProductionAuthConfigured } from "@/server/auth-session";
-import { checkPostgresHealth } from "@/server/postgres-health";
+import { checkDatabaseHealth } from "@/server/database-health";
 
 type StepStatus = "success" | "warning" | "error" | "skipped";
-
-type FinalReadinessStep = {
-  id: string;
-  title: string;
-  status: StepStatus;
-  evidence: string;
-  issue: string | null;
-  nextAction: string | null;
-};
-
-export type MvpFinalReadiness = {
-  appName: "growth-engine";
-  readinessArea: "mvp.final.growth-engine";
-  status: "ready" | "needs_fix" | "blocked";
-  checkedAt: string;
-  steps: FinalReadinessStep[];
-  summary: Record<StepStatus, number>;
-  dataSafety: {
-    storesCardData: false;
-    paymentStatusSentOutsideGrowthEngine: false;
-    salesAmountSentOutsideGrowthEngine: false;
-    stripeDataSentOutsideGrowthEngine: false;
-    customerMasterSentOutsideGrowthEngine: false;
-    reportBodyCopiedToGrowthEngine: false;
-    professionalMemoryBodyCopiedToGrowthEngine: false;
-  };
-  issues: string[];
-};
-
-function summarize(steps: FinalReadinessStep[]): Record<StepStatus, number> {
-  return steps.reduce(
-    (acc, step) => ({
-      ...acc,
-      [step.status]: acc[step.status] + 1
-    }),
-    { success: 0, warning: 0, error: 0, skipped: 0 } satisfies Record<StepStatus, number>
-  );
-}
+type FinalReadinessStep = { id: string; title: string; status: StepStatus; evidence: string; issue: string | null; nextAction: string | null };
+export type MvpFinalReadiness = { appName: "growth-engine"; readinessArea: "mvp.final.growth-engine"; status: "ready" | "needs_fix" | "blocked"; checkedAt: string; steps: FinalReadinessStep[]; summary: Record<StepStatus, number>; dataSafety: { storesCardData: false; paymentStatusSentOutsideGrowthEngine: false; salesAmountSentOutsideGrowthEngine: false; stripeDataSentOutsideGrowthEngine: false; customerMasterSentOutsideGrowthEngine: false; reportBodyCopiedToGrowthEngine: false; professionalMemoryBodyCopiedToGrowthEngine: false }; issues: string[] };
+function summarize(steps: FinalReadinessStep[]): Record<StepStatus, number> { return steps.reduce((acc, step) => ({ ...acc, [step.status]: acc[step.status] + 1 }), { success: 0, warning: 0, error: 0, skipped: 0 } satisfies Record<StepStatus, number>); }
 
 export async function getMvpFinalReadiness(): Promise<MvpFinalReadiness> {
-  const postgresHealth = await checkPostgresHealth();
-  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
+  const databaseHealth = await checkDatabaseHealth();
+  const databaseBackedPersistenceReady = databaseHealth.databaseBackedPersistenceReady;
   const productionAuthConfigured = isProductionAuthConfigured();
   const contractStatus = getContractStatus();
-  const contractsReady =
-    contractStatus.status === "success" &&
-    !contractStatus.usesLegacyEventNames &&
-    contractStatus.usesReportTerminology &&
-    contractStatus.canonicalOwnershipChecked &&
-    contractStatus.paymentAndSalesCanonicalOwner === "growth-engine";
+  const contractsReady = contractStatus.status === "success" && !contractStatus.usesLegacyEventNames && contractStatus.usesReportTerminology && contractStatus.canonicalOwnershipChecked && contractStatus.paymentAndSalesCanonicalOwner === "growth-engine";
 
   const steps: FinalReadinessStep[] = [
-    {
-      id: "postgres.production_runtime",
-      title: "Postgres Production runtime確認",
-      status: databaseBackedPersistenceReady ? "success" : "error",
-      evidence: `repositoryDriver=${postgresHealth.repositoryDriver}; postgresConfigured=${postgresHealth.postgresConfigured}; postgresReachable=${postgresHealth.postgresReachable}`,
-      issue: databaseBackedPersistenceReady
-        ? null
-        : postgresHealth.issue ?? "Production DB persistence is not active.",
-      nextAction: databaseBackedPersistenceReady
-        ? null
-        : "Set GROWTH_REPOSITORY_DRIVER=postgres and one supported Postgres URL env in Vercel Production, then redeploy."
-    },
-    {
-      id: "db.roundtrip_verification",
-      title: "DB保存 roundtrip確認",
-      status: databaseBackedPersistenceReady ? "success" : "error",
-      evidence: "POST /api/persistence/roundtrip and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.",
-      issue: databaseBackedPersistenceReady
-        ? null
-        : "Roundtrip cannot be treated as ready until Postgres runtime is active and reachable.",
-      nextAction: databaseBackedPersistenceReady
-        ? "Run the roundtrip from /app/business/settings/persistence with an owner session."
-        : "Configure Postgres runtime first, then run the roundtrip UI."
-    },
-    {
-      id: "public_booking.to_business_reservation",
-      title: "公開予約から予約一覧反映",
-      status: databaseBackedPersistenceReady ? "success" : "error",
-      evidence: "POST /api/public/bookings creates Customer and Reservation through the shared Growth Repository used by /app/business/reservations.",
-      issue: databaseBackedPersistenceReady
-        ? null
-        : "Implementation uses the shared repository, but cross-browser persistence requires active Postgres runtime.",
-      nextAction: databaseBackedPersistenceReady
-        ? "Create one public booking and confirm it appears in /app/business/reservations and detail opens."
-        : "Activate Postgres and repeat the public booking test."
-    },
-    {
-      id: "customer_management.db_backed",
-      title: "顧客管理の本番DB確認",
-      status: databaseBackedPersistenceReady ? "success" : "error",
-      evidence: "/app/business/customers, detail, and edit screens use the Growth Repository customer methods.",
-      issue: databaseBackedPersistenceReady
-        ? null
-        : "Customer screens are implemented, but production persistence requires active Postgres runtime.",
-      nextAction: databaseBackedPersistenceReady
-        ? "Create, list, detail, and edit a customer after owner sign-in."
-        : "Activate Postgres before treating customer data as production-persistent."
-    },
-    {
-      id: "sales_payment.minimum_screen",
-      title: "売上・決済画面の最低限完成",
-      status: "success",
-      evidence: "/app/business/sales shows paid/unpaid reservations, customer sales, product sales, source sales, and states Growth Engine payment ownership.",
-      issue: null,
-      nextAction: "Continue Stripe webhook hardening after DB persistence is active."
-    },
-    {
-      id: "contracts_and_launch_readiness",
-      title: "MVP最終readiness",
-      status: productionAuthConfigured && contractsReady ? "success" : "error",
-      evidence: `productionAuthConfigured=${productionAuthConfigured}; contractsReady=${contractsReady}; contractStatus=${contractStatus.status}`,
-      issue: productionAuthConfigured && contractsReady
-        ? null
-        : "Production auth or contracts readiness is not passing.",
-      nextAction: productionAuthConfigured && contractsReady
-        ? "Run /api/launch/growth-engine/readiness and /contracts/status after Postgres activation."
-        : "Fix production auth or contract status before external pilot."
-    }
+    { id: "database.production_runtime", title: "Production database runtime確認", status: databaseBackedPersistenceReady ? "success" : "error", evidence: `repositoryDriver=${databaseHealth.repositoryDriver}; backend=${databaseHealth.backend}; configured=${databaseHealth.configured}; reachable=${databaseHealth.reachable}`, issue: databaseBackedPersistenceReady ? null : databaseHealth.issue ?? "Production DB persistence is not active.", nextAction: databaseBackedPersistenceReady ? null : "Configure a reachable D1 or Postgres Growth Repository backend, then redeploy." },
+    { id: "db.roundtrip_verification", title: "DB保存 roundtrip確認", status: databaseBackedPersistenceReady ? "success" : "error", evidence: "POST /api/persistence/roundtrip and /app/business/settings/persistence roundtrip UI are implemented and owner-protected.", issue: databaseBackedPersistenceReady ? null : "Roundtrip cannot be treated as ready until the database runtime is active and reachable.", nextAction: databaseBackedPersistenceReady ? "Run the roundtrip from /app/business/settings/persistence with an owner session." : "Configure database persistence first, then run the roundtrip UI." },
+    { id: "public_booking.to_business_reservation", title: "公開予約から予約一覧反映", status: databaseBackedPersistenceReady ? "success" : "error", evidence: "POST /api/public/bookings creates Customer and Reservation through the shared Growth Repository used by /app/business/reservations.", issue: databaseBackedPersistenceReady ? null : "Implementation uses the shared repository, but cross-browser persistence requires an active database runtime.", nextAction: databaseBackedPersistenceReady ? "Create one public booking and confirm it appears in /app/business/reservations and detail opens." : "Activate database persistence and repeat the public booking test." },
+    { id: "customer_management.db_backed", title: "顧客管理の本番DB確認", status: databaseBackedPersistenceReady ? "success" : "error", evidence: "/app/business/customers, detail, and edit screens use the Growth Repository customer methods.", issue: databaseBackedPersistenceReady ? null : "Customer screens are implemented, but production persistence requires an active database runtime.", nextAction: databaseBackedPersistenceReady ? "Create, list, detail, and edit a customer after owner sign-in." : "Activate database persistence before treating customer data as production-persistent." },
+    { id: "sales_payment.minimum_screen", title: "売上・決済画面の最低限完成", status: "success", evidence: "/app/business/sales shows paid/unpaid reservations, customer sales, product sales, source sales, and states Growth Engine payment ownership.", issue: null, nextAction: "Continue Stripe webhook hardening after database persistence is active." },
+    { id: "contracts_and_launch_readiness", title: "MVP最終readiness", status: productionAuthConfigured && contractsReady ? "success" : "error", evidence: `productionAuthConfigured=${productionAuthConfigured}; contractsReady=${contractsReady}; contractStatus=${contractStatus.status}`, issue: productionAuthConfigured && contractsReady ? null : "Production auth or contracts readiness is not passing.", nextAction: productionAuthConfigured && contractsReady ? "Run /api/launch/growth-engine/readiness and /contracts/status after database activation." : "Fix production auth or contract status before external pilot." }
   ];
   const summary = summarize(steps);
   const issues = steps.flatMap((step) => (step.issue ? [step.issue] : []));
-
-  return {
-    appName: "growth-engine",
-    readinessArea: "mvp.final.growth-engine",
-    status: summary.error > 0 ? "blocked" : summary.warning > 0 ? "needs_fix" : "ready",
-    checkedAt: getTimestamp(),
-    steps,
-    summary,
-    dataSafety: {
-      storesCardData: false,
-      paymentStatusSentOutsideGrowthEngine: false,
-      salesAmountSentOutsideGrowthEngine: false,
-      stripeDataSentOutsideGrowthEngine: false,
-      customerMasterSentOutsideGrowthEngine: false,
-      reportBodyCopiedToGrowthEngine: false,
-      professionalMemoryBodyCopiedToGrowthEngine: false
-    },
-    issues
-  };
+  return { appName: "growth-engine", readinessArea: "mvp.final.growth-engine", status: summary.error > 0 ? "blocked" : summary.warning > 0 ? "needs_fix" : "ready", checkedAt: getTimestamp(), steps, summary, dataSafety: { storesCardData: false, paymentStatusSentOutsideGrowthEngine: false, salesAmountSentOutsideGrowthEngine: false, stripeDataSentOutsideGrowthEngine: false, customerMasterSentOutsideGrowthEngine: false, reportBodyCopiedToGrowthEngine: false, professionalMemoryBodyCopiedToGrowthEngine: false }, issues };
 }
