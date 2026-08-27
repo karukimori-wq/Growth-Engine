@@ -12,7 +12,7 @@ const sqlNumber = (value) => Number.isFinite(Number(value)) ? String(Number(valu
 try {
   const customers = (await pool.query("SELECT * FROM growth_customers ORDER BY created_at ASC")).rows;
   const reservations = (await pool.query("SELECT * FROM growth_reservations ORDER BY created_at ASC")).rows;
-  const statements = ["BEGIN TRANSACTION;"];
+  const statements = [];
 
   for (const row of customers) {
     statements.push(`INSERT INTO growth_customers (id,workspace_id,lead_id,customer_number,name,display_name,contact_information,line_user_id,sns_accounts,source_channel,source_campaign_id,source_content_id,referred_by_customer_id,customer_status,first_purchase_at,last_purchase_at,total_revenue,purchase_count,created_at,updated_at) VALUES (${[
@@ -26,7 +26,7 @@ try {
     ].map(sqlString).join(",")}) ON CONFLICT(id) DO UPDATE SET workspace_id=excluded.workspace_id,lead_id=excluded.lead_id,customer_id=excluded.customer_id,product_id=excluded.product_id,professional_studio_type=excluded.professional_studio_type,scheduled_start_at=excluded.scheduled_start_at,scheduled_end_at=excluded.scheduled_end_at,status=excluded.status,source_channel=excluded.source_channel,campaign_id=excluded.campaign_id,content_id=excluded.content_id,payment_status=excluded.payment_status,session_id=excluded.session_id,created_at=excluded.created_at,updated_at=excluded.updated_at;`);
   }
 
-  statements.push("COMMIT;");
+  if (statements.length === 0) statements.push("SELECT 1;");
   fs.writeFileSync("/tmp/growth-postgres-to-d1.sql", statements.join("\n"), { mode: 0o600 });
   fs.writeFileSync("/tmp/growth-migration-manifest.json", JSON.stringify({ customerCount: customers.length, reservationCount: reservations.length }), { mode: 0o600 });
   console.log(`Prepared canonical migration: customers=${customers.length}, reservations=${reservations.length}. No record contents were logged.`);
