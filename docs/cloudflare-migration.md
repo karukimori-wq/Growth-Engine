@@ -16,6 +16,8 @@ Cloudflare migration implementation is in progress. Existing Postgres compatibil
 
 Growth Engine is the canonical owner of Customer, Reservation, Payment and Sales. Migration must not silently drop, overwrite, or transfer canonical ownership of those records.
 
+The existing Production Postgres datastore contains canonical Customer/Reservation data, so Cloudflare cutover is blocked unless the deployment workflow can read the source database and migrate those records into D1 first. The source connection is supplied only as the GitHub Actions secret `GROWTH_ENGINE_SOURCE_POSTGRES_URL`; its value must never be logged or copied into Worker vars.
+
 The first D1 production slice covers Customer and Reservation because those are already the database-backed entities in the current Postgres Growth Repository. Existing Postgres support is retained as a rollback/compatibility path during validation.
 
 ## Implemented migration baseline
@@ -29,6 +31,8 @@ The first D1 production slice covers Customer and Reservation because those are 
 - D1 schema for Customer and Reservation
 - D1-aware persistence status and roundtrip
 - database-driver-agnostic launch readiness
+- Postgres-to-D1 canonical Customer/Reservation export/import script
+- source-vs-D1 migration count gate before Worker deployment
 - GitHub Actions Cloudflare Production workflow
 - Cloudflare Service Binding declarations for AI Platform Core, Numeria Studio, Velvet and Communication Planner
 
@@ -39,11 +43,22 @@ The Cloudflare Production workflow must confirm:
 1. TypeScript passes.
 2. Cloudflare identity is valid.
 3. D1 exists and schema applies remotely.
-4. OpenNext Worker builds and deploys.
-5. `/health`, `/version`, `/contracts/status`, and `/api/persistence/status` pass.
-6. Owner session authentication works without exposing auth secrets.
-7. `POST /api/persistence/roundtrip` creates and reads back both Customer and Reservation through D1.
-8. The returned Customer and Reservation IDs exist in the remote D1 database.
+4. Existing Postgres Customer/Reservation records are exported without logging record contents.
+5. Canonical records are imported idempotently into D1 and D1 counts are not lower than source counts.
+6. Only after migration verification, OpenNext Worker builds and deploys.
+7. `/health`, `/version`, `/contracts/status`, and `/api/persistence/status` pass.
+8. Owner session authentication works without exposing auth secrets.
+9. `POST /api/persistence/roundtrip` creates and reads back both Customer and Reservation through D1.
+10. The returned Customer and Reservation IDs exist in the remote D1 database.
+
+## Required GitHub Actions secrets
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `GROWTH_ENGINE_AUTH_SECRET`
+- `GROWTH_ENGINE_OWNER_ACCESS_CODE`
+- `GROWTH_ENGINE_SOURCE_POSTGRES_URL`
+- `VELVET_INTEGRATION_SECRET` (recommended to preserve the existing trusted Velvet bridge)
 
 ## Not implied by migration
 
