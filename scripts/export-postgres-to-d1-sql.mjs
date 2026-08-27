@@ -28,7 +28,12 @@ try {
 
   if (statements.length === 0) statements.push("SELECT 1;");
   fs.writeFileSync("/tmp/growth-postgres-to-d1.sql", statements.join("\n"), { mode: 0o600 });
-  fs.writeFileSync("/tmp/growth-migration-manifest.json", JSON.stringify({ customerCount: customers.length, reservationCount: reservations.length }), { mode: 0o600 });
+  fs.writeFileSync("/tmp/growth-migration-manifest.json", JSON.stringify({
+    customerCount: customers.length,
+    reservationCount: reservations.length,
+    customerIds: customers.map((row) => row.id),
+    reservationIds: reservations.map((row) => row.id)
+  }), { mode: 0o600 });
   console.log(`Prepared canonical migration: customers=${customers.length}, reservations=${reservations.length}. No record contents were logged.`);
 } finally {
   await pool.end();
