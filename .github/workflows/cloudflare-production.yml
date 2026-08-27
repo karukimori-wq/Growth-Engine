@@ -8,6 +8,7 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   GROWTH_ENGINE_AUTH_SECRET: ${{ secrets.GROWTH_ENGINE_AUTH_SECRET }}
   GROWTH_ENGINE_OWNER_ACCESS_CODE: ${{ secrets.GROWTH_ENGINE_OWNER_ACCESS_CODE }}
+  GROWTH_ENGINE_SOURCE_POSTGRES_URL: ${{ secrets.GROWTH_ENGINE_SOURCE_POSTGRES_URL }}
   VELVET_INTEGRATION_SECRET: ${{ secrets.VELVET_INTEGRATION_SECRET }}
   PRODUCTION_URL: https://growth-engine.karukimori.workers.dev
 jobs:
@@ -27,6 +28,7 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$GROWTH_ENGINE_AUTH_SECRET"
           test -n "$GROWTH_ENGINE_OWNER_ACCESS_CODE"
+          test -n "$GROWTH_ENGINE_SOURCE_POSTGRES_URL"
       - name: Verify Cloudflare identity
         run: npx wrangler whoami
       - name: Ensure Growth Engine D1 database
@@ -44,6 +46,24 @@ jobs:
           npx wrangler d1 info growth-engine
       - name: Apply D1 schema
         run: npx wrangler d1 execute growth-engine --remote --file=cloudflare/schema.sql --yes
+      - name: Export canonical Postgres Customer and Reservation data
+        run: node scripts/export-postgres-to-d1-sql.mjs
+      - name: Import canonical records into D1
+        run: npx wrangler d1 execute growth-engine --remote --file=/tmp/growth-postgres-to-d1.sql --yes
+      - name: Verify canonical migration counts
+        run: |
+          npx wrangler d1 execute growth-engine --remote --command="SELECT COUNT(*) AS count FROM growth_customers;" --json > /tmp/d1-customer-count.json
+          npx wrangler d1 execute growth-engine --remote --command="SELECT COUNT(*) AS count FROM growth_reservations;" --json > /tmp/d1-reservation-count.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const manifest=JSON.parse(fs.readFileSync('/tmp/growth-migration-manifest.json','utf8'));
+          const count=(p)=>Number(JSON.parse(fs.readFileSync(p,'utf8'))?.[0]?.results?.[0]?.count??-1);
+          const customers=count('/tmp/d1-customer-count.json');
+          const reservations=count('/tmp/d1-reservation-count.json');
+          if(customers < manifest.customerCount)throw new Error(`D1 Customer migration count mismatch: source=${manifest.customerCount}, d1=${customers}`);
+          if(reservations < manifest.reservationCount)throw new Error(`D1 Reservation migration count mismatch: source=${manifest.reservationCount}, d1=${reservations}`);
+          console.log(`Canonical migration verified: customers>=${manifest.customerCount}, reservations>=${manifest.reservationCount}`);
+          NODE
       - name: Build OpenNext Worker
         run: npm run cf:build
       - name: Deploy Worker
@@ -75,7 +95,7 @@ jobs:
           NODE
       - name: Create owner session
         run: |
-          curl --silent --show-error --output /dev/null --dump-header /tmp/signin-headers.txt --cookie-jar /tmp/cookies.txt \
+          curl --silent --show-error --output /dev/null --cookie-jar /tmp/cookies.txt \
             -X POST "$PRODUCTION_URL/api/auth/sign-in" \
             --data-urlencode "accessCode=$GROWTH_ENGINE_OWNER_ACCESS_CODE" \
             --data-urlencode "next=/app/business"
