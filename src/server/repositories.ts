@@ -1,58 +1,19 @@
 import type { Customer, Lead, Payment, ProcessedExternalEvent, Product, Reservation, Revenue } from "@/domain/entities";
-import {
-  customers,
-  leads,
-  payments,
-  processedExternalEvents,
-  products,
-  revenues,
-  todayReservations
-} from "@/lib/mock-data";
-import {
-  createPostgresReservation,
-  findPostgresReservation,
-  listPostgresReservations,
-  updatePostgresReservationPaymentStatus
-} from "@/server/postgres-reservation-repository";
-import {
-  createPostgresCustomer,
-  findPostgresCustomer,
-  listPostgresCustomers,
-  updatePostgresCustomer
-} from "@/server/postgres-customer-repository";
+import { customers, leads, payments, processedExternalEvents, products, revenues, todayReservations } from "@/lib/mock-data";
+import { createPostgresReservation, findPostgresReservation, listPostgresReservations, updatePostgresReservationPaymentStatus } from "@/server/postgres-reservation-repository";
+import { createPostgresCustomer, findPostgresCustomer, listPostgresCustomers, updatePostgresCustomer } from "@/server/postgres-customer-repository";
+import { createD1Reservation, findD1Reservation, listD1Reservations, updateD1ReservationPaymentStatus } from "@/server/d1-reservation-repository";
+import { createD1Customer, findD1Customer, listD1Customers, updateD1Customer } from "@/server/d1-customer-repository";
 
 export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
 export type CreateCustomerInput = Omit<Customer, "id" | "customerNumber" | "createdAt" | "updatedAt">;
-export type UpdateCustomerInput = Partial<
-  Pick<
-    Customer,
-    | "name"
-    | "displayName"
-    | "contactInformation"
-    | "lineUserId"
-    | "snsAccounts"
-    | "sourceChannel"
-    | "sourceCampaignId"
-    | "sourceContentId"
-    | "referredByCustomerId"
-    | "customerStatus"
-    | "firstPurchaseAt"
-    | "lastPurchaseAt"
-    | "totalRevenue"
-    | "purchaseCount"
-  >
->;
+export type UpdateCustomerInput = Partial<Pick<Customer, "name" | "displayName" | "contactInformation" | "lineUserId" | "snsAccounts" | "sourceChannel" | "sourceCampaignId" | "sourceContentId" | "referredByCustomerId" | "customerStatus" | "firstPurchaseAt" | "lastPurchaseAt" | "totalRevenue" | "purchaseCount">>;
 export type CreateReservationInput = Omit<Reservation, "id" | "createdAt" | "updatedAt">;
 export type CreatePaymentInput = Omit<Payment, "id" | "createdAt" | "updatedAt">;
 export type CreateRevenueInput = Omit<Revenue, "id" | "createdAt">;
-export type RecordProcessedExternalEventInput = {
-  workspaceId: string;
-  provider: ProcessedExternalEvent["provider"];
-  externalEventId: string;
-  eventType: string;
-};
+export type RecordProcessedExternalEventInput = { workspaceId: string; provider: ProcessedExternalEvent["provider"]; externalEventId: string; eventType: string };
 
-export type GrowthRepositoryDriver = "mock" | "postgres";
+export type GrowthRepositoryDriver = "mock" | "postgres" | "d1";
 
 export type GrowthRepository = {
   listLeads(workspaceId: string): Promise<Lead[]>;
@@ -68,325 +29,69 @@ export type GrowthRepository = {
   listReservations(workspaceId: string): Promise<Reservation[]>;
   findReservation(workspaceId: string, reservationId: string): Promise<Reservation | undefined>;
   createReservation(input: CreateReservationInput): Promise<Reservation>;
-  updateReservationPaymentStatus(
-    workspaceId: string,
-    reservationId: string | undefined,
-    paymentStatus: Reservation["paymentStatus"]
-  ): Promise<Reservation | undefined>;
+  updateReservationPaymentStatus(workspaceId: string, reservationId: string | undefined, paymentStatus: Reservation["paymentStatus"]): Promise<Reservation | undefined>;
   listPayments(workspaceId: string): Promise<Payment[]>;
   findPaymentByStripePaymentIntent(workspaceId: string, stripePaymentIntentId: string): Promise<Payment | undefined>;
   createPayment(input: CreatePaymentInput): Promise<Payment>;
   markPaymentPaid(payment: Payment, paidAt: string): Promise<Payment>;
   markPaymentRefunded(payment: Payment, refundStatus: "partial" | "full", refundedAt: string): Promise<Payment>;
   createRevenue(input: CreateRevenueInput): Promise<Revenue>;
-  hasProcessedExternalEvent(
-    workspaceId: string,
-    provider: ProcessedExternalEvent["provider"],
-    externalEventId: string
-  ): Promise<boolean>;
+  hasProcessedExternalEvent(workspaceId: string, provider: ProcessedExternalEvent["provider"], externalEventId: string): Promise<boolean>;
   recordProcessedExternalEvent(input: RecordProcessedExternalEventInput): Promise<ProcessedExternalEvent>;
 };
 
-function filterByWorkspace<T extends { workspaceId: string }>(records: T[], workspaceId: string): T[] {
-  return records.filter((record) => record.workspaceId === workspaceId);
-}
-
-function replaceById<T extends { id: string }>(records: T[], updatedRecord: T): T {
-  const index = records.findIndex((record) => record.id === updatedRecord.id);
-
-  if (index >= 0) {
-    records[index] = updatedRecord;
-  }
-
-  return updatedRecord;
-}
-
-function removeUndefinedValues<T extends Record<string, unknown>>(input: T): Partial<T> {
-  return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>;
-}
+function filterByWorkspace<T extends { workspaceId: string }>(records: T[], workspaceId: string) { return records.filter((record) => record.workspaceId === workspaceId); }
+function replaceById<T extends { id: string }>(records: T[], updatedRecord: T) { const index = records.findIndex((record) => record.id === updatedRecord.id); if (index >= 0) records[index] = updatedRecord; return updatedRecord; }
+function removeUndefinedValues<T extends Record<string, unknown>>(input: T): Partial<T> { return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>; }
 
 function createMockGrowthRepository(): GrowthRepository {
   return {
-    async listLeads(workspaceId) {
-      return filterByWorkspace(leads, workspaceId);
-    },
-
-    async findLead(workspaceId, leadId) {
-      return leads.find((lead) => lead.workspaceId === workspaceId && lead.id === leadId);
-    },
-
-    async createLead(input) {
-      const now = new Date().toISOString();
-      const lead = {
-        id: `lead_${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
-        ...input
-      };
-
-      leads.push(lead);
-      return lead;
-    },
-
-    async listCustomers(workspaceId) {
-      return filterByWorkspace(customers, workspaceId);
-    },
-
-    async findCustomer(workspaceId, customerId) {
-      return customers.find((customer) => customer.workspaceId === workspaceId && customer.id === customerId);
-    },
-
-    async createCustomer(input) {
-      const now = new Date().toISOString();
-      const customer = {
-        id: `cus_${Date.now()}`,
-        customerNumber: `C-${Date.now().toString().slice(-6)}`,
-        createdAt: now,
-        updatedAt: now,
-        ...input
-      };
-
-      customers.push(customer);
-      return customer;
-    },
-
-    async updateCustomer(workspaceId, customerId, input) {
-      const customer = customers.find((record) => record.workspaceId === workspaceId && record.id === customerId);
-
-      if (!customer) {
-        return undefined;
-      }
-
-      return replaceById(customers, {
-        ...customer,
-        ...removeUndefinedValues(input),
-        workspaceId,
-        id: customer.id,
-        customerNumber: customer.customerNumber,
-        updatedAt: new Date().toISOString()
-      });
-    },
-
-    async convertLeadToCustomer(workspaceId, lead) {
-      const now = new Date().toISOString();
-      const customer: Customer = {
-        id: `cus_${Date.now()}`,
-        customerNumber: `C-${Date.now().toString().slice(-6)}`,
-        createdAt: now,
-        updatedAt: now,
-        workspaceId,
-        leadId: lead.id,
-        displayName: lead.displayName,
-        contactInformation: {
-          ...(lead.email ? { email: lead.email } : {}),
-          ...(lead.phone ? { phone: lead.phone } : {})
-        },
-        lineUserId: lead.lineUserId,
-        snsAccounts: lead.snsAccount ? { primary: lead.snsAccount } : {},
-        sourceChannel: lead.sourceChannel,
-        sourceCampaignId: lead.sourceCampaignId,
-        sourceContentId: lead.sourceContentId,
-        customerStatus: "active",
-        totalRevenue: 0,
-        purchaseCount: 0
-      };
-
-      customers.push(customer);
-      return customer;
-    },
-
-    async listProducts(workspaceId) {
-      return filterByWorkspace(products, workspaceId);
-    },
-
-    async findProduct(workspaceId, productId) {
-      return products.find((product) => product.workspaceId === workspaceId && product.id === productId);
-    },
-
-    async listReservations(workspaceId) {
-      return filterByWorkspace(todayReservations, workspaceId);
-    },
-
-    async findReservation(workspaceId, reservationId) {
-      return todayReservations.find(
-        (reservation) => reservation.workspaceId === workspaceId && reservation.id === reservationId
-      );
-    },
-
-    async createReservation(input) {
-      const now = new Date().toISOString();
-      const reservation = {
-        id: `res_${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
-        ...input
-      };
-
-      todayReservations.push(reservation);
-      return reservation;
-    },
-
-    async updateReservationPaymentStatus(workspaceId, reservationId, paymentStatus) {
-      if (!reservationId) {
-        return undefined;
-      }
-
-      const reservation = todayReservations.find(
-        (record) => record.workspaceId === workspaceId && record.id === reservationId
-      );
-
-      if (!reservation) {
-        return undefined;
-      }
-
-      return replaceById(todayReservations, {
-        ...reservation,
-        paymentStatus,
-        updatedAt: new Date().toISOString()
-      });
-    },
-
-    async listPayments(workspaceId) {
-      return filterByWorkspace(payments, workspaceId);
-    },
-
-    async findPaymentByStripePaymentIntent(workspaceId, stripePaymentIntentId) {
-      return payments.find(
-        (payment) => payment.workspaceId === workspaceId && payment.stripePaymentIntentId === stripePaymentIntentId
-      );
-    },
-
-    async createPayment(input) {
-      const now = new Date().toISOString();
-      const payment = {
-        id: `pay_${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
-        ...input
-      };
-
-      payments.push(payment);
-      return payment;
-    },
-
-    async markPaymentPaid(payment, paidAt) {
-      return replaceById(payments, {
-        ...payment,
-        paymentStatus: "paid",
-        paidAt,
-        updatedAt: new Date().toISOString()
-      });
-    },
-
-    async markPaymentRefunded(payment, refundStatus, refundedAt) {
-      return replaceById(payments, {
-        ...payment,
-        paymentStatus: "refunded",
-        refundStatus,
-        refundedAt,
-        updatedAt: new Date().toISOString()
-      });
-    },
-
-    async createRevenue(input) {
-      const revenue = {
-        id: `rev_${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        ...input
-      };
-
-      revenues.push(revenue);
-      return revenue;
-    },
-
-    async hasProcessedExternalEvent(workspaceId, provider, externalEventId) {
-      return processedExternalEvents.some(
-        (event) =>
-          event.workspaceId === workspaceId &&
-          event.provider === provider &&
-          event.externalEventId === externalEventId
-      );
-    },
-
-    async recordProcessedExternalEvent(input) {
-      const existingEvent = processedExternalEvents.find(
-        (event) =>
-          event.workspaceId === input.workspaceId &&
-          event.provider === input.provider &&
-          event.externalEventId === input.externalEventId
-      );
-
-      if (existingEvent) {
-        return existingEvent;
-      }
-
-      const now = new Date().toISOString();
-      const processedEvent = {
-        id: `pevt_${Date.now()}`,
-        processedAt: now,
-        createdAt: now,
-        ...input
-      };
-
-      processedExternalEvents.push(processedEvent);
-      return processedEvent;
-    }
+    async listLeads(workspaceId) { return filterByWorkspace(leads, workspaceId); },
+    async findLead(workspaceId, leadId) { return leads.find((lead) => lead.workspaceId === workspaceId && lead.id === leadId); },
+    async createLead(input) { const now = new Date().toISOString(); const lead = { id: `lead_${Date.now()}`, createdAt: now, updatedAt: now, ...input }; leads.push(lead); return lead; },
+    async listCustomers(workspaceId) { return filterByWorkspace(customers, workspaceId); },
+    async findCustomer(workspaceId, customerId) { return customers.find((customer) => customer.workspaceId === workspaceId && customer.id === customerId); },
+    async createCustomer(input) { const now = new Date().toISOString(); const customer = { id: `cus_${Date.now()}`, customerNumber: `C-${Date.now().toString().slice(-6)}`, createdAt: now, updatedAt: now, ...input }; customers.push(customer); return customer; },
+    async updateCustomer(workspaceId, customerId, input) { const customer = customers.find((record) => record.workspaceId === workspaceId && record.id === customerId); if (!customer) return undefined; return replaceById(customers, { ...customer, ...removeUndefinedValues(input), workspaceId, id: customer.id, customerNumber: customer.customerNumber, updatedAt: new Date().toISOString() }); },
+    async convertLeadToCustomer(workspaceId, lead) { const now = new Date().toISOString(); const customer: Customer = { id: `cus_${Date.now()}`, customerNumber: `C-${Date.now().toString().slice(-6)}`, createdAt: now, updatedAt: now, workspaceId, leadId: lead.id, displayName: lead.displayName, contactInformation: { ...(lead.email ? { email: lead.email } : {}), ...(lead.phone ? { phone: lead.phone } : {}) }, lineUserId: lead.lineUserId, snsAccounts: lead.snsAccount ? { primary: lead.snsAccount } : {}, sourceChannel: lead.sourceChannel, sourceCampaignId: lead.sourceCampaignId, sourceContentId: lead.sourceContentId, customerStatus: "active", totalRevenue: 0, purchaseCount: 0 }; customers.push(customer); return customer; },
+    async listProducts(workspaceId) { return filterByWorkspace(products, workspaceId); },
+    async findProduct(workspaceId, productId) { return products.find((product) => product.workspaceId === workspaceId && product.id === productId); },
+    async listReservations(workspaceId) { return filterByWorkspace(todayReservations, workspaceId); },
+    async findReservation(workspaceId, reservationId) { return todayReservations.find((reservation) => reservation.workspaceId === workspaceId && reservation.id === reservationId); },
+    async createReservation(input) { const now = new Date().toISOString(); const reservation = { id: `res_${Date.now()}`, createdAt: now, updatedAt: now, ...input }; todayReservations.push(reservation); return reservation; },
+    async updateReservationPaymentStatus(workspaceId, reservationId, paymentStatus) { if (!reservationId) return undefined; const reservation = todayReservations.find((record) => record.workspaceId === workspaceId && record.id === reservationId); if (!reservation) return undefined; return replaceById(todayReservations, { ...reservation, paymentStatus, updatedAt: new Date().toISOString() }); },
+    async listPayments(workspaceId) { return filterByWorkspace(payments, workspaceId); },
+    async findPaymentByStripePaymentIntent(workspaceId, stripePaymentIntentId) { return payments.find((payment) => payment.workspaceId === workspaceId && payment.stripePaymentIntentId === stripePaymentIntentId); },
+    async createPayment(input) { const now = new Date().toISOString(); const payment = { id: `pay_${Date.now()}`, createdAt: now, updatedAt: now, ...input }; payments.push(payment); return payment; },
+    async markPaymentPaid(payment, paidAt) { return replaceById(payments, { ...payment, paymentStatus: "paid", paidAt, updatedAt: new Date().toISOString() }); },
+    async markPaymentRefunded(payment, refundStatus, refundedAt) { return replaceById(payments, { ...payment, paymentStatus: "refunded", refundStatus, refundedAt, updatedAt: new Date().toISOString() }); },
+    async createRevenue(input) { const revenue = { id: `rev_${Date.now()}`, createdAt: new Date().toISOString(), ...input }; revenues.push(revenue); return revenue; },
+    async hasProcessedExternalEvent(workspaceId, provider, externalEventId) { return processedExternalEvents.some((event) => event.workspaceId === workspaceId && event.provider === provider && event.externalEventId === externalEventId); },
+    async recordProcessedExternalEvent(input) { const existing = processedExternalEvents.find((event) => event.workspaceId === input.workspaceId && event.provider === input.provider && event.externalEventId === input.externalEventId); if (existing) return existing; const now = new Date().toISOString(); const event = { id: `pevt_${Date.now()}`, processedAt: now, createdAt: now, ...input }; processedExternalEvents.push(event); return event; }
   };
 }
 
 function createPostgresGrowthRepository(): GrowthRepository {
-  const mockRepository = createMockGrowthRepository();
-
-  return {
-    ...mockRepository,
-    listCustomers: listPostgresCustomers,
-    findCustomer: findPostgresCustomer,
-    createCustomer: createPostgresCustomer,
-    updateCustomer: updatePostgresCustomer,
-    listReservations: listPostgresReservations,
-    findReservation: findPostgresReservation,
-    createReservation: createPostgresReservation,
-    updateReservationPaymentStatus: updatePostgresReservationPaymentStatus
-  };
+  return { ...createMockGrowthRepository(), listCustomers: listPostgresCustomers, findCustomer: findPostgresCustomer, createCustomer: createPostgresCustomer, updateCustomer: updatePostgresCustomer, listReservations: listPostgresReservations, findReservation: findPostgresReservation, createReservation: createPostgresReservation, updateReservationPaymentStatus: updatePostgresReservationPaymentStatus };
 }
 
-export function hasPostgresEnvironment() {
-  return Boolean(
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.DATABASE_URL
-  );
+function createD1GrowthRepository(): GrowthRepository {
+  return { ...createMockGrowthRepository(), listCustomers: listD1Customers, findCustomer: findD1Customer, createCustomer: createD1Customer, updateCustomer: updateD1Customer, listReservations: listD1Reservations, findReservation: findD1Reservation, createReservation: createD1Reservation, updateReservationPaymentStatus: updateD1ReservationPaymentStatus };
 }
+
+export function hasPostgresEnvironment() { return Boolean(process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL); }
 
 function resolveGrowthRepositoryDriver(): GrowthRepositoryDriver {
-  const configuredDriver = process.env.GROWTH_REPOSITORY_DRIVER as GrowthRepositoryDriver | undefined;
-
-  if (configuredDriver) {
-    return configuredDriver;
-  }
-
+  const configuredDriver = process.env.GROWTH_REPOSITORY_DRIVER?.trim().toLowerCase();
+  if (configuredDriver === "d1" || configuredDriver === "postgres" || configuredDriver === "mock") return configuredDriver;
   return hasPostgresEnvironment() ? "postgres" : "mock";
 }
 
-export function getGrowthRepositoryDriver(): GrowthRepositoryDriver {
-  return resolveGrowthRepositoryDriver();
-}
-
-export function createGrowthRepository(driver: GrowthRepositoryDriver = resolveGrowthRepositoryDriver()): GrowthRepository {
-  if (driver === "postgres") {
-    return createPostgresGrowthRepository();
-  }
-
-  return createMockGrowthRepository();
-}
+export function getGrowthRepositoryDriver(): GrowthRepositoryDriver { return resolveGrowthRepositoryDriver(); }
+export function createGrowthRepository(driver: GrowthRepositoryDriver = resolveGrowthRepositoryDriver()): GrowthRepository { if (driver === "d1") return createD1GrowthRepository(); if (driver === "postgres") return createPostgresGrowthRepository(); return createMockGrowthRepository(); }
 
 const growthRepository = createGrowthRepository();
-
-export function getGrowthRepository(): GrowthRepository {
-  return growthRepository;
-}
-
+export function getGrowthRepository(): GrowthRepository { return growthRepository; }
 export const listLeads = growthRepository.listLeads;
 export const findLead = growthRepository.findLead;
 export const createLead = growthRepository.createLead;
