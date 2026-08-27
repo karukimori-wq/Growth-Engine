@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "growth-engine",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "vars": {
+    "GROWTH_REPOSITORY_DRIVER": "d1",
+    "AI_PLATFORM_CORE_URL": "https://ai-platform-core.karukimori.workers.dev",
+    "NUMERIA_STUDIO_URL": "https://numeria-studio.karukimori.workers.dev",
+    "VELVET_URL": "https://velvet.karukimori.workers.dev"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "growth-engine", "database_id": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "services": [
+    { "binding": "AI_PLATFORM_CORE_SERVICE", "service": "ai-platform-core" },
+    { "binding": "NUMERIA_STUDIO_SERVICE", "service": "numeria-studio" },
+    { "binding": "VELVET_SERVICE", "service": "velvet" },
+    { "binding": "COMMUNICATION_PLANNER_SERVICE", "service": "communication-planner" }
+  ]
+}
