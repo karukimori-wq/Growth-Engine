@@ -1,0 +1,103 @@
+name: Cloudflare Production
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  GROWTH_ENGINE_AUTH_SECRET: ${{ secrets.GROWTH_ENGINE_AUTH_SECRET }}
+  GROWTH_ENGINE_OWNER_ACCESS_CODE: ${{ secrets.GROWTH_ENGINE_OWNER_ACCESS_CODE }}
+  VELVET_INTEGRATION_SECRET: ${{ secrets.VELVET_INTEGRATION_SECRET }}
+  PRODUCTION_URL: https://growth-engine.karukimori.workers.dev
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+      - name: Require Production configuration
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$GROWTH_ENGINE_AUTH_SECRET"
+          test -n "$GROWTH_ENGINE_OWNER_ACCESS_CODE"
+      - name: Verify Cloudflare identity
+        run: npx wrangler whoami
+      - name: Ensure Growth Engine D1 database
+        run: |
+          npx wrangler d1 list --json > /tmp/d1-list.json
+          DB_ID=$(node -e 'const fs=require("fs");const list=JSON.parse(fs.readFileSync("/tmp/d1-list.json","utf8"));const db=list.find(x=>x.name==="growth-engine");process.stdout.write(db?.uuid??db?.id??"")')
+          if [ -z "$DB_ID" ]; then
+            npx wrangler d1 create growth-engine
+            npx wrangler d1 list --json > /tmp/d1-list.json
+            DB_ID=$(node -e 'const fs=require("fs");const list=JSON.parse(fs.readFileSync("/tmp/d1-list.json","utf8"));const db=list.find(x=>x.name==="growth-engine");process.stdout.write(db?.uuid??db?.id??"")')
+          fi
+          test -n "$DB_ID"
+          echo "D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
+          node -e 'const fs=require("fs");const p="wrangler.jsonc";const s=fs.readFileSync(p,"utf8").replace("00000000-0000-0000-0000-000000000000",process.argv[1]);fs.writeFileSync(p,s)' "$DB_ID"
+          npx wrangler d1 info growth-engine
+      - name: Apply D1 schema
+        run: npx wrangler d1 execute growth-engine --remote --file=cloudflare/schema.sql --yes
+      - name: Build OpenNext Worker
+        run: npm run cf:build
+      - name: Deploy Worker
+        run: npx wrangler deploy
+      - name: Configure Production auth secret
+        run: printf '%s' "$GROWTH_ENGINE_AUTH_SECRET" | npx wrangler secret put GROWTH_ENGINE_AUTH_SECRET
+      - name: Configure Production owner access code
+        run: printf '%s' "$GROWTH_ENGINE_OWNER_ACCESS_CODE" | npx wrangler secret put GROWTH_ENGINE_OWNER_ACCESS_CODE
+      - name: Configure Velvet integration secret
+        if: ${{ env.VELVET_INTEGRATION_SECRET != '' }}
+        run: printf '%s' "$VELVET_INTEGRATION_SECRET" | npx wrangler secret put VELVET_INTEGRATION_SECRET
+      - name: Verify public Production endpoints
+        run: |
+          sleep 5
+          curl --fail --silent --show-error "$PRODUCTION_URL/health" | tee /tmp/health.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/version" | tee /tmp/version.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/contracts/status" | tee /tmp/contracts.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/api/persistence/status" | tee /tmp/persistence.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const health=JSON.parse(fs.readFileSync('/tmp/health.json','utf8'));
+          const version=JSON.parse(fs.readFileSync('/tmp/version.json','utf8'));
+          const contracts=JSON.parse(fs.readFileSync('/tmp/contracts.json','utf8'));
+          const persistence=JSON.parse(fs.readFileSync('/tmp/persistence.json','utf8'));
+          if(health.status!=='success')throw new Error('Growth Engine health failed');
+          if(version.status!=='success')throw new Error('Growth Engine version failed');
+          if(contracts.status!=='success'||contracts.professionalIdRequired!==false||contracts.usesLegacyEventNames===true)throw new Error('Growth Engine contracts failed');
+          if(persistence.status!=='success'||persistence.repositoryDriver!=='d1'||persistence.d1Reachable!==true||persistence.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine D1 readiness failed');
+          NODE
+      - name: Create owner session
+        run: |
+          curl --silent --show-error --output /dev/null --dump-header /tmp/signin-headers.txt --cookie-jar /tmp/cookies.txt \
+            -X POST "$PRODUCTION_URL/api/auth/sign-in" \
+            --data-urlencode "accessCode=$GROWTH_ENGINE_OWNER_ACCESS_CODE" \
+            --data-urlencode "next=/app/business"
+          test -s /tmp/cookies.txt
+      - name: Verify Customer and Reservation D1 roundtrip
+        run: |
+          curl --fail --silent --show-error --cookie /tmp/cookies.txt -X POST "$PRODUCTION_URL/api/persistence/roundtrip" | tee /tmp/roundtrip.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const value=JSON.parse(fs.readFileSync('/tmp/roundtrip.json','utf8'));
+          if(value.status!=='success'||value.repositoryDriver!=='d1'||value.roundtripReady!==true)throw new Error('Growth Engine D1 roundtrip failed');
+          if(!value.createdRefs?.customerId||!value.createdRefs?.reservationId)throw new Error('Growth Engine roundtrip refs missing');
+          NODE
+      - name: Verify D1 canonical rows
+        run: |
+          CUSTOMER_ID=$(node -e 'const v=require("/tmp/roundtrip.json");process.stdout.write(v.createdRefs.customerId)')
+          RESERVATION_ID=$(node -e 'const v=require("/tmp/roundtrip.json");process.stdout.write(v.createdRefs.reservationId)')
+          npx wrangler d1 execute growth-engine --remote --command="SELECT id, workspace_id FROM growth_customers WHERE id = '$CUSTOMER_ID';" --json > /tmp/customer-d1.json
+          npx wrangler d1 execute growth-engine --remote --command="SELECT id, workspace_id, customer_id FROM growth_reservations WHERE id = '$RESERVATION_ID';" --json > /tmp/reservation-d1.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const rows=(p)=>JSON.parse(fs.readFileSync(p,'utf8'))?.[0]?.results??[];
+          if(rows('/tmp/customer-d1.json').length!==1)throw new Error('Customer row not persisted in D1');
+          if(rows('/tmp/reservation-d1.json').length!==1)throw new Error('Reservation row not persisted in D1');
+          NODE
