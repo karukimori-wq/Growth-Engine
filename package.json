@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@types/pg": "^8.23.1",
@@ -17,11 +20,13 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.3",
     "@types/node": "^22.13.14",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "eslint": "^9.21.0",
     "eslint-config-next": "^15.4.6",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "wrangler": "^4.126.0"
   }
 }
