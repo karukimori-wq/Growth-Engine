@@ -98,8 +98,8 @@ jobs:
           const version=JSON.parse(fs.readFileSync('/tmp/version.json','utf8'));
           const contracts=JSON.parse(fs.readFileSync('/tmp/contracts.json','utf8'));
           const persistence=JSON.parse(fs.readFileSync('/tmp/persistence.json','utf8'));
-          if(health.status!=='success')throw new Error('Growth Engine health failed');
-          if(version.status!=='success')throw new Error('Growth Engine version failed');
+          if(health.status!=='success'&&health.status!=='ok')throw new Error('Growth Engine health failed');
+          if(version.appName!=='growth-engine'||!version.appVersion||!version.contractVersion)throw new Error('Growth Engine version failed');
           if(contracts.status!=='success'||contracts.professionalIdRequired!==false||contracts.usesLegacyEventNames===true)throw new Error('Growth Engine contracts failed');
           if(persistence.status!=='success'||persistence.repositoryDriver!=='d1'||persistence.d1Reachable!==true||persistence.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine D1 readiness failed');
           NODE
