@@ -1,7 +1,7 @@
 import { demoWorkspace } from "@/lib/mock-data";
 import { getBusinessMenu, getBusinessMenuLabel, getProfessionalApp } from "@/lib/professional-app-registry";
 import { listBusinessReservations } from "@/server/business-reservations";
-import { checkPostgresHealth } from "@/server/postgres-health";
+import { checkDatabaseHealth } from "@/server/database-health";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +54,8 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
   const currentProfessionalApp = getProfessionalApp(first(query.studioKey) ?? demoWorkspace.professionalStudioType);
   const businessMenu = getBusinessMenu(currentProfessionalApp.studioKey);
   const reservationLabel = getBusinessMenuLabel("reservations", currentProfessionalApp.studioKey);
-  const postgresHealth = await checkPostgresHealth();
-  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
+  const databaseHealth = await checkDatabaseHealth();
+  const databaseBackedPersistenceReady = databaseHealth.databaseBackedPersistenceReady;
   const records = await listBusinessReservations(demoWorkspace.id);
   const statusFilter = first(query.status) ?? "all";
   const paymentFilter = first(query.paymentStatus) ?? "all";
@@ -113,12 +113,12 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
             <p className="eyebrow">保存設定の確認が必要</p>
             <h3>本番DB保存がまだ有効ではありません</h3>
             <p className="muted">
-              現在は {postgresHealth.repositoryDriver} repository で動作しています。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の予約一覧表示は保証できません。
+              現在は {databaseHealth.repositoryDriver} repository で動作しています。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の予約一覧表示は保証できません。
             </p>
             <p className="muted">
-              Vercel Production に <code>GROWTH_REPOSITORY_DRIVER=postgres</code> と Postgres 接続envを設定し、redeploy後に <code>/api/persistence/status</code> を確認してください。
+              <code>GROWTH_REPOSITORY_DRIVER=d1</code> と Cloudflare D1 の <code>DB</code> binding を確認し、redeploy後に <code>/api/persistence/status</code> を確認してください。
             </p>
-            {postgresHealth.issue ? <p className="muted">現在の確認結果: {postgresHealth.issue}</p> : null}
+            {databaseHealth.issue ? <p className="muted">現在の確認結果: {databaseHealth.issue}</p> : null}
           </section>
         ) : null}
 
