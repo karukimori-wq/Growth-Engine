@@ -38,8 +38,8 @@ export default function PersistenceStatusPage() {
             <p className="metric">{preflight.repositoryDriver}</p>
           </div>
           <div className="card span-4">
-            <p className="muted">Postgres env</p>
-            <p className="metric">{preflight.postgresConfigured ? "configured" : "missing"}</p>
+            <p className="muted">database backend</p>
+            <p className="metric">{preflight.repositoryDriver === "d1" ? "Cloudflare D1" : preflight.repositoryDriver}</p>
           </div>
           <div className="card span-4">
             <p className="muted">DB backed persistence</p>
@@ -50,7 +50,7 @@ export default function PersistenceStatusPage() {
             <h3>現在の判定</h3>
             <p className="muted">
               {databaseBackedPersistenceReady
-                ? "Customer / Reservation はPostgres repositoryで保存されます。owner sessionで roundtrip API を実行し、write / read / list を確認してください。"
+                ? "Customer / Reservation は選択中のDB repositoryで保存されます。owner sessionで roundtrip API を実行し、write / read / list を確認してください。"
                 : "Customer / Reservation は本番DB保存になっていません。公開予約は受け付けられますが、別端末・別ブラウザ・再ログイン後の表示は保証できません。"}
             </p>
             <div className="action-row">
@@ -69,14 +69,22 @@ export default function PersistenceStatusPage() {
                   {preflight.env.growthRepositoryDriverConfigured ? "configured" : "missing"}
                 </span>
               </li>
-              {preflight.env.candidates.map((candidate) => (
-                <li className="task" key={candidate.name}>
-                  <span><code>{candidate.name}</code></span>
-                  <span className={`badge ${candidate.configured ? "" : "warning"}`}>
-                    {candidate.configured ? "configured" : "候補"}
-                  </span>
-                </li>
-              ))}
+              <li className="task">
+                <span>Cloudflare D1 <code>DB</code> binding</span>
+                <span className={`badge ${preflight.repositoryDriver === "d1" && databaseBackedPersistenceReady ? "" : "warning"}`}>
+                  {preflight.repositoryDriver === "d1" && databaseBackedPersistenceReady ? "ready" : "check status API"}
+                </span>
+              </li>
+              {preflight.repositoryDriver === "postgres"
+                ? preflight.env.candidates.map((candidate) => (
+                    <li className="task" key={candidate.name}>
+                      <span><code>{candidate.name}</code></span>
+                      <span className={`badge ${candidate.configured ? "" : "warning"}`}>
+                        {candidate.configured ? "configured" : "候補"}
+                      </span>
+                    </li>
+                  ))
+                : null}
             </ul>
             <p className="muted">envの値は画面・API・ログに表示しません。表示するのは設定有無のみです。</p>
           </div>
