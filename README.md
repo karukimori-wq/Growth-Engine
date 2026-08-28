@@ -46,15 +46,23 @@ Growth Engine and AI Platform Core are shared foundations. Industry-specific wor
 - [Growth Engine Requirements v1.0](docs/requirements-v1.0.md)
 - [MVP Foundation Checklist](docs/mvp-foundation.md)
 - [Phase 1 Implementation Notes](docs/phase-1-implementation.md)
+- [Cloudflare Migration](docs/cloudflare-migration.md)
+- [Production Persistence](docs/production-persistence.md)
 
 ## Local Foundation Runtime
 
-Copy `.env.example` for local development defaults. The MVP foundation runs with mock drivers until production authentication, database storage, Event Engine transport, and live Stripe SDK calls are implemented.
+Copy `.env.example` for local development defaults. Local development can run with mock drivers, while Production runs on Cloudflare Workers with D1-backed Customer and Reservation persistence.
 
 ```text
 GROWTH_REPOSITORY_DRIVER=mock
 AUDIT_LOG_REPOSITORY_DRIVER=mock
 EVENT_PUBLISHER_DRIVER=mock
+```
+
+Production uses:
+
+```text
+GROWTH_REPOSITORY_DRIVER=d1
 ```
 
 ## Connection Test APIs
