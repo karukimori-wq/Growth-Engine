@@ -2,7 +2,7 @@
 
 ## Status
 
-Cloudflare migration implementation is in progress. Existing Postgres compatibility remains available while Cloudflare D1 is validated.
+Cloudflare migration is complete for the Growth Engine MVP persistence slice. Existing Postgres compatibility remains available as a rollback and source-migration path, but Production now runs on Cloudflare Workers with D1-backed Customer and Reservation persistence.
 
 ## Production target
 
@@ -16,7 +16,7 @@ Cloudflare migration implementation is in progress. Existing Postgres compatibil
 
 Growth Engine is the canonical owner of Customer, Reservation, Payment and Sales. Migration must not silently drop, overwrite, or transfer canonical ownership of those records.
 
-The existing Production Postgres datastore contains canonical Customer/Reservation data, so Cloudflare cutover is blocked unless the deployment workflow can read the source database and migrate those records into D1 first. The source connection is supplied only as the GitHub Actions secret `GROWTH_ENGINE_SOURCE_POSTGRES_URL`; its value must never be logged or copied into Worker vars.
+If an existing Production Postgres datastore must be migrated, the deployment workflow can read the source database and migrate those records into D1 before deployment. The source connection is supplied only as the optional GitHub Actions secret `GROWTH_ENGINE_SOURCE_POSTGRES_URL`; its value must never be logged or copied into Worker vars.
 
 The first D1 production slice covers Customer and Reservation because those are already the database-backed entities in the current Postgres Growth Repository. Existing Postgres support is retained as a rollback/compatibility path during validation.
 
@@ -43,9 +43,9 @@ The Cloudflare Production workflow must confirm:
 1. TypeScript passes.
 2. Cloudflare identity is valid.
 3. D1 exists and schema applies remotely.
-4. Existing Postgres Customer/Reservation records are exported without logging record contents.
-5. Canonical records are imported idempotently into D1 and D1 counts are not lower than source counts.
-6. Only after migration verification, OpenNext Worker builds and deploys.
+4. Optional existing Postgres Customer/Reservation records are exported without logging record contents when `GROWTH_ENGINE_SOURCE_POSTGRES_URL` is configured.
+5. Optional canonical records are imported idempotently into D1 and D1 counts are not lower than source counts.
+6. OpenNext Worker builds and deploys.
 7. `/health`, `/version`, `/contracts/status`, and `/api/persistence/status` pass.
 8. Owner session authentication works without exposing auth secrets.
 9. `POST /api/persistence/roundtrip` creates and reads back both Customer and Reservation through D1.
@@ -57,7 +57,7 @@ The Cloudflare Production workflow must confirm:
 - `CLOUDFLARE_ACCOUNT_ID`
 - `GROWTH_ENGINE_AUTH_SECRET`
 - `GROWTH_ENGINE_OWNER_ACCESS_CODE`
-- `GROWTH_ENGINE_SOURCE_POSTGRES_URL`
+- `GROWTH_ENGINE_SOURCE_POSTGRES_URL` (optional; only needed for Postgres-to-D1 canonical import)
 - `VELVET_INTEGRATION_SECRET` (recommended to preserve the existing trusted Velvet bridge)
 
 ## Not implied by migration
