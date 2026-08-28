@@ -6,6 +6,7 @@ permissions:
 env:
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  GROWTH_ENGINE_SOURCE_POSTGRES_URL: ${{ secrets.GROWTH_ENGINE_SOURCE_POSTGRES_URL }}
   PRODUCTION_URL: https://growth-engine.karukimori.workers.dev
 jobs:
   deploy:
@@ -22,13 +23,11 @@ jobs:
         env:
           GROWTH_ENGINE_AUTH_SECRET: ${{ secrets.GROWTH_ENGINE_AUTH_SECRET }}
           GROWTH_ENGINE_OWNER_ACCESS_CODE: ${{ secrets.GROWTH_ENGINE_OWNER_ACCESS_CODE }}
-          GROWTH_ENGINE_SOURCE_POSTGRES_URL: ${{ secrets.GROWTH_ENGINE_SOURCE_POSTGRES_URL }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$GROWTH_ENGINE_AUTH_SECRET"
           test -n "$GROWTH_ENGINE_OWNER_ACCESS_CODE"
-          test -n "$GROWTH_ENGINE_SOURCE_POSTGRES_URL"
       - name: Verify Cloudflare identity
         run: npx wrangler whoami
       - name: Ensure Growth Engine D1 database
@@ -49,12 +48,13 @@ jobs:
       - name: Build OpenNext Worker
         run: npm run cf:build
       - name: Final canonical Postgres export
-        env:
-          GROWTH_ENGINE_SOURCE_POSTGRES_URL: ${{ secrets.GROWTH_ENGINE_SOURCE_POSTGRES_URL }}
+        if: env.GROWTH_ENGINE_SOURCE_POSTGRES_URL != ''
         run: node scripts/export-postgres-to-d1-sql.mjs
       - name: Import canonical records into D1
+        if: env.GROWTH_ENGINE_SOURCE_POSTGRES_URL != ''
         run: npx wrangler d1 execute growth-engine --remote --file=/tmp/growth-postgres-to-d1.sql --yes
       - name: Verify canonical migration counts
+        if: env.GROWTH_ENGINE_SOURCE_POSTGRES_URL != ''
         run: |
           npx wrangler d1 execute growth-engine --remote --command="SELECT COUNT(*) AS count FROM growth_customers;" --json > /tmp/d1-customer-count.json
           npx wrangler d1 execute growth-engine --remote --command="SELECT COUNT(*) AS count FROM growth_reservations;" --json > /tmp/d1-reservation-count.json
