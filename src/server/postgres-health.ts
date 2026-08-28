@@ -1,13 +1,13 @@
 import { getTimestamp } from "@/server/app-metadata";
 import { queryPostgres } from "@/server/postgres-db";
-import { getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
+import { type GrowthRepositoryDriver, getGrowthRepositoryDriver, hasPostgresEnvironment } from "@/server/repositories";
 
 export type PostgresHealthStatus = "success" | "warning" | "error";
 
 export type PostgresHealth = {
   status: PostgresHealthStatus;
   checkedAt: string;
-  repositoryDriver: "mock" | "postgres";
+  repositoryDriver: GrowthRepositoryDriver;
   postgresConfigured: boolean;
   postgresReachable: boolean;
   databaseBackedPersistenceReady: boolean;
