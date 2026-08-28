@@ -4,12 +4,13 @@ Growth Engine owns the canonical Customer, Reservation, Payment, and Sales recor
 
 ## Current implementation
 
-The application supports two Growth Repository drivers.
+The application supports three Growth Repository drivers.
 
 | Driver | Use | Persistence |
 | --- | --- | --- |
 | `mock` | local/demo fallback | process-local only; not valid for external pilot |
-| `postgres` | production MVP | database-backed Customer and Reservation persistence |
+| `postgres` | rollback/source migration path | database-backed Customer and Reservation persistence |
+| `d1` | Cloudflare Production | D1-backed Customer and Reservation persistence |
 
 The active driver is reported by:
 
@@ -27,35 +28,31 @@ Production readiness requires:
 
 ```json
 {
-  "repositoryDriver": "postgres",
-  "postgresConfigured": true,
+  "repositoryDriver": "d1",
+  "d1Configured": true,
+  "d1Reachable": true,
   "databaseBackedPersistenceReady": true,
   "blockedUserFlows": []
 }
 ```
 
-## Required Vercel Production environment variables
+## Required Cloudflare Production configuration
 
-Set the following in the Growth Engine Vercel project Production environment.
-
-```txt
-GROWTH_REPOSITORY_DRIVER=postgres
-```
-
-Set at least one supported Postgres connection variable. The runtime checks these names:
+Set the following in `wrangler.jsonc` or Cloudflare Worker vars.
 
 ```txt
-POSTGRES_URL
-POSTGRES_PRISMA_URL
-POSTGRES_URL_NON_POOLING
-DATABASE_URL
+GROWTH_REPOSITORY_DRIVER=d1
 ```
+
+The Worker must have a D1 binding named `DB` pointing at the `growth-engine` D1 database.
+
+Postgres connection variables are only needed for rollback or one-time canonical import. Do not configure or expose them unless that path is intentionally being used.
 
 Do not expose these values in logs, browser output, public endpoints, or screenshots.
 
 ## Schema behavior
 
-The production repository creates its MVP tables lazily when the repository is first used:
+The Cloudflare schema creates the MVP D1 tables used by the active runtime:
 
 - `growth_customers`
 - `growth_reservations`
@@ -116,12 +113,12 @@ Indexes are created for workspace-scoped list and detail paths. All Customer and
 
 ## Verification sequence after setting env vars
 
-After configuring Production env vars, redeploy Production and run the following checks.
+After deploying Production, run the following checks.
 
 1. Check persistence status.
 
 ```http
-GET https://growth-engine-ruby-nine.vercel.app/api/persistence/status
+GET https://growth-engine.karukimori.workers.dev/api/persistence/status
 ```
 
 Expected:
@@ -129,8 +126,9 @@ Expected:
 ```json
 {
   "status": "success",
-  "repositoryDriver": "postgres",
-  "postgresConfigured": true,
+  "repositoryDriver": "d1",
+  "d1Configured": true,
+  "d1Reachable": true,
   "databaseBackedPersistenceReady": true,
   "blockedUserFlows": []
 }
@@ -139,7 +137,7 @@ Expected:
 2. Run the combined Customer and Reservation roundtrip from an owner session.
 
 ```http
-POST https://growth-engine-ruby-nine.vercel.app/api/persistence/roundtrip
+POST https://growth-engine.karukimori.workers.dev/api/persistence/roundtrip
 ```
 
 Expected:
@@ -149,8 +147,9 @@ Expected:
   "status": "success",
   "roundtripReady": true,
   "roundtripStatus": "success",
-  "repositoryDriver": "postgres",
-  "postgresConfigured": true,
+  "repositoryDriver": "d1",
+  "d1Configured": true,
+  "d1Reachable": true,
   "checks": {
     "customerCreated": true,
     "customerFound": true,
@@ -167,7 +166,7 @@ The roundtrip endpoint requires an owner session. If called without a signed own
 3. Create a public booking.
 
 ```http
-POST https://growth-engine-ruby-nine.vercel.app/api/public/bookings
+POST https://growth-engine.karukimori.workers.dev/api/public/bookings
 ```
 
 Expected: redirect to `/public/booking/confirmed?reservationId=...&productId=...&scheduledStartAt=...`.
