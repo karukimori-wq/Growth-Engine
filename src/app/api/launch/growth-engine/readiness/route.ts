@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { demoWorkspace } from "@/lib/mock-data";
 import { createStripeClient } from "@/integrations/stripe";
 import { isProductionAuthConfigured } from "@/server/auth-session";
-import { checkPostgresHealth } from "@/server/postgres-health";
+import { checkDatabaseHealth } from "@/server/database-health";
 
 type CheckStatus = "success" | "warning" | "error" | "skipped";
 
@@ -10,8 +10,8 @@ const checkedAt = () => new Date().toISOString();
 
 export async function GET() {
   const stripe = createStripeClient();
-  const postgresHealth = await checkPostgresHealth();
-  const databaseBackedPersistenceReady = postgresHealth.databaseBackedPersistenceReady;
+  const databaseHealth = await checkDatabaseHealth();
+  const databaseBackedPersistenceReady = databaseHealth.databaseBackedPersistenceReady;
   const checkout = await stripe.createCheckoutSession({
     workspaceId: demoWorkspace.id,
     customerId: "cus_001",
@@ -42,7 +42,7 @@ export async function GET() {
         "POST /api/public/bookings creates a Customer and requested Reservation through the Growth Repository used by /app/business/reservations.",
       issue: databaseBackedPersistenceReady
         ? null
-        : postgresHealth.issue ?? "Database-backed Customer and Reservation persistence is not ready."
+        : databaseHealth.issue ?? "Database-backed Customer and Reservation persistence is not ready."
     },
     {
       id: "auth.workspace_isolation",
@@ -79,11 +79,16 @@ export async function GET() {
       ownerUserId: demoWorkspace.ownerUserId
     },
     persistence: {
-      repositoryDriver: postgresHealth.repositoryDriver,
-      postgresConfigured: postgresHealth.postgresConfigured,
-      postgresReachable: postgresHealth.postgresReachable,
-      customerPersistence: databaseBackedPersistenceReady ? "postgres" : "mock",
-      reservationPersistence: databaseBackedPersistenceReady ? "postgres" : "mock",
+      repositoryDriver: databaseHealth.repositoryDriver,
+      backend: databaseHealth.backend,
+      configured: databaseHealth.configured,
+      reachable: databaseHealth.reachable,
+      postgresConfigured: databaseHealth.backend === "postgres" ? databaseHealth.configured : false,
+      postgresReachable: databaseHealth.backend === "postgres" ? databaseHealth.reachable : false,
+      d1Configured: databaseHealth.backend === "d1" ? databaseHealth.configured : false,
+      d1Reachable: databaseHealth.backend === "d1" ? databaseHealth.reachable : false,
+      customerPersistence: databaseBackedPersistenceReady ? databaseHealth.repositoryDriver : "mock",
+      reservationPersistence: databaseBackedPersistenceReady ? databaseHealth.repositoryDriver : "mock",
       databaseBackedPersistenceReady
     },
     dataSafety: {
