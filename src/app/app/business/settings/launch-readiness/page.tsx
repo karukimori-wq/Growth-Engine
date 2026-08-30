@@ -93,7 +93,7 @@ export default async function LaunchReadinessPage() {
           <div className="card span-12">
             <p className="muted">checkedAt: {readiness.checkedAt}</p>
             <p className="muted">
-              最終的な外部pilot判定は、Postgres Production env設定後に roundtrip と公開予約反映を確認してから ready にします。
+              最終的な外部pilot判定は、Cloudflare D1の到達性、owner sessionでのroundtrip、公開予約からBusiness画面への反映を確認してからreadyにします。
             </p>
           </div>
         </section>

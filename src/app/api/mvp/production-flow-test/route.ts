@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
       contentType: "instagram_post",
       channel: "instagram",
       cta: "予約ページを見る",
-      destinationUrl: "https://growth-engine-ruby-nine.vercel.app/test-booking"
+      destinationUrl: `${request.nextUrl.origin}/public/booking`
     };
     const postDraftResult = await postJson(
       snsPlannerPostDraftsUrl,

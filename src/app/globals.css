@@ -215,6 +215,10 @@ textarea {
   margin-top: 18px;
 }
 
+.header-actions {
+  margin-top: 0;
+}
+
 .timeline-entry {
   display: flex;
   justify-content: space-between;

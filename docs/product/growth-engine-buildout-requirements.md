@@ -374,7 +374,7 @@ Many screens are not complete yet. When a screen is not implemented, it must sho
 | Common | Professional App Registry | Done | Numeria Studio and Velvet can be represented as switchable Professional Apps. |
 | Common | Professional App Home | Mostly done | `/app/professional/numeria` and `/app/professional/velvet` should render. |
 | Business | 今日やること | MVP implemented | Can act as the home. May include mocked sales, new customers, repeat, priority tasks, and AI suggestions. |
-| Business | 予約 | MVP implemented | Reservation list, detail, public booking page, and confirmation page exist. Persistence still needs production hardening. |
+| Business | 予約 | MVP implemented | D1-backed list/detail, public booking/confirmation, and owner-side manual creation exist. Customer detail and repeat candidates can open creation with Customer preselected. |
 | Business | Reservation detail to Numeria start | MVP implemented | For Numeria, should link to Numeria Studio `/app/growth/start` with reference IDs only. |
 | Business | SNS Planner integration | API test implemented | Post-draft request API is tested. UI is still MVP-level. |
 | Business | AI Platform Core integration | API test implemented | AI Activity test is implemented. Production UI is thin. |
@@ -383,7 +383,7 @@ Many screens are not complete yet. When a screen is not implemented, it must sho
 | Business | 集客 | Placeholder / partial | Has post brief and SNS Planner entry point but is not a full campaign management screen. |
 | Business | 見込み客 | coming_soon | Must not 404. |
 | Business | 売上 | coming_soon | Must not 404. Aggregation UI not implemented. |
-| Business | リピート | coming_soon / partial | Follow-up path exists, but repeat management is not complete. |
+| Business | リピート | partial | Follow-up and candidate paths exist. Candidates can open Customer, create a preselected Reservation, or prepare a message draft. |
 | Business | 紹介 | coming_soon | Must not 404. |
 | Business | 分析 | coming_soon | Must not 404. |
 | Professional / Numeria | 顧客 | Placeholder / incomplete | Customer source of truth is Growth Engine. Professional view still needs real implementation. |

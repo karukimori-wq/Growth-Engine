@@ -8,10 +8,11 @@ type CheckStatus = "success" | "warning" | "error" | "skipped";
 
 const checkedAt = () => new Date().toISOString();
 
-export async function GET() {
+export async function GET(request: Request) {
   const stripe = createStripeClient();
   const databaseHealth = await checkDatabaseHealth();
   const databaseBackedPersistenceReady = databaseHealth.databaseBackedPersistenceReady;
+  const baseUrl = new URL(request.url).origin;
   const checkout = await stripe.createCheckoutSession({
     workspaceId: demoWorkspace.id,
     customerId: "cus_001",
@@ -19,8 +20,8 @@ export async function GET() {
     productId: "prd_numeria_basic",
     amount: 12000,
     currency: demoWorkspace.currency,
-    successUrl: "https://growth-engine-ruby-nine.vercel.app/public/booking/confirmed",
-    cancelUrl: "https://growth-engine-ruby-nine.vercel.app/public/booking"
+    successUrl: `${baseUrl}/public/booking/confirmed`,
+    cancelUrl: `${baseUrl}/public/booking`
   });
   const checks: Array<{
     id: string;

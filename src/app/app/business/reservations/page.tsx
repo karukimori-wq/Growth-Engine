@@ -105,7 +105,10 @@ export default async function ReservationsPage({ searchParams: _searchParams }: 
             <p className="eyebrow">Growth Engine / {reservationLabel}</p>
             <h2 className="page-title">{reservationLabel}一覧</h2>
           </div>
-          <a className="button" href="/public/booking">一般顧客向け予約ページ</a>
+          <div className="action-row header-actions">
+            <a className="button" href="/app/business/reservations/new">予約を登録</a>
+            <a className="button secondary" href="/public/booking">一般顧客向け予約ページ</a>
+          </div>
         </header>
 
         {!databaseBackedPersistenceReady ? (

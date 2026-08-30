@@ -47,6 +47,9 @@ export default async function CustomerDetailPage({ params }: Props) {
             <a className="button secondary" href="/app/business/customers">
               一覧へ戻る
             </a>
+            <a className="button" href={`/app/business/reservations/new?customerId=${customer.id}`}>
+              予約を作成
+            </a>
             <a className="button" href={`/app/business/customers/${customer.id}/edit`}>
               編集
             </a>

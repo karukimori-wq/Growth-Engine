@@ -33,7 +33,7 @@ export const mvpPostDraftBrief = {
   contentType: "instagram_post",
   channel: "instagram",
   cta: "予約ページを見る",
-  destinationUrl: "https://growth-engine-ruby-nine.vercel.app/public/booking"
+  destinationUrl: "https://growth-engine.karukimori.workers.dev/public/booking"
 };
 
 export function getReservationForScreen(reservationId: string) {

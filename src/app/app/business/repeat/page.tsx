@@ -68,6 +68,9 @@ export default async function RepeatPage({ searchParams }: Props) {
                     <a className="button secondary" href={`/app/business/customers/${candidate.customer.id}`}>
                       顧客
                     </a>
+                    <a className="button secondary" href={`/app/business/reservations/new?customerId=${candidate.customer.id}`}>
+                      予約
+                    </a>
                     <a className="button" href={candidate.messageDraftHref}>
                       文案
                     </a>
