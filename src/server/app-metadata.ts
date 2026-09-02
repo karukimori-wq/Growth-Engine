@@ -1,4 +1,8 @@
 import packageJson from "../../package.json";
+import {
+  businessPlanContract,
+  supportedPlanIds
+} from "@/domain/plan-contract";
 
 export const appName = "growth-engine";
 export const contractVersion = "0.1.0";
@@ -20,6 +24,13 @@ export type ContractStatusResponse = {
   contractVersion: typeof contractVersion;
   identityMode: "workspaceId+userId";
   professionalIdRequired: false;
+  supportedPlanIds: typeof supportedPlanIds;
+  businessOfferingStatus: typeof businessPlanContract.businessOfferingStatus;
+  businessFeatureFlagKey: typeof businessPlanContract.featureFlagKey;
+  businessFeatureFlagDefault: typeof businessPlanContract.featureFlagDefault;
+  businessAccessFailClosed: typeof businessPlanContract.failClosed;
+  publicBusinessEntryVisibleWhileNotOffered: typeof businessPlanContract.publicEntryVisibleWhileNotOffered;
+  saasSubscriptionPaymentSeparatedFromCustomerPayment: true;
   usesLegacyEventNames: boolean;
   usesReportTerminology: boolean;
   canonicalOwnershipChecked: boolean;
@@ -64,6 +75,13 @@ export function getContractStatus(): ContractStatusResponse {
     contractVersion,
     identityMode: "workspaceId+userId",
     professionalIdRequired: false,
+    supportedPlanIds,
+    businessOfferingStatus: businessPlanContract.businessOfferingStatus,
+    businessFeatureFlagKey: businessPlanContract.featureFlagKey,
+    businessFeatureFlagDefault: businessPlanContract.featureFlagDefault,
+    businessAccessFailClosed: businessPlanContract.failClosed,
+    publicBusinessEntryVisibleWhileNotOffered: businessPlanContract.publicEntryVisibleWhileNotOffered,
+    saasSubscriptionPaymentSeparatedFromCustomerPayment: true,
     usesLegacyEventNames,
     usesReportTerminology,
     canonicalOwnershipChecked,

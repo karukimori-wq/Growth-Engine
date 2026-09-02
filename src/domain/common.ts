@@ -1,4 +1,7 @@
-export type Plan = "free" | "pro" | "business";
+export type PlanId = "free" | "pro" | "business";
+
+/** @deprecated Use the shared-contract name PlanId for new code. */
+export type Plan = PlanId;
 
 export type Role = "owner" | "admin" | "member";
 

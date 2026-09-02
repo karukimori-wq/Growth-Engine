@@ -48,6 +48,7 @@ Growth Engine and AI Platform Core are shared foundations. Industry-specific wor
 - [Phase 1 Implementation Notes](docs/phase-1-implementation.md)
 - [Cloudflare Migration](docs/cloudflare-migration.md)
 - [Production Persistence](docs/production-persistence.md)
+- [Business Plan Preparation](docs/business-plan-preparation.md)
 
 ## Local Foundation Runtime
 

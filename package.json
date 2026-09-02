@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "test:contracts": "node --no-warnings --experimental-strip-types --test tests/*.test.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "cf:build": "opennextjs-cloudflare build",
