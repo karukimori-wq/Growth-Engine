@@ -30,6 +30,8 @@ Future Business access requires all three conditions:
 
 Authentication alone, or a Free/Pro subscription, must never authorize Business APIs. Existing internal pilot screens and routes are not a promise that Business is publicly offered to Free/Pro customers.
 
+The unauthenticated Professional App selection surface follows the offering status and does not render Business navigation, reservation administration links, or the Business home action while the offering is `not_offered`. Existing owner-protected internal pilot routes remain available by direct URL for operational verification; this does not make Business publicly purchasable or visible.
+
 ## Ownership retained by Growth Engine
 
 - Customer

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   businessPlanContract,
   canUseBusinessIntegration,
+  isBusinessPublicEntryVisible,
   isSharedPlanId,
   supportedPlanIds,
 } from "../src/domain/plan-contract.ts";
@@ -21,6 +22,8 @@ test("Business integration is unavailable until every gate passes", () => {
   assert.equal(businessPlanContract.featureFlagDefault, false);
   assert.equal(businessPlanContract.publicEntryVisibleWhileNotOffered, false);
   assert.equal(businessPlanContract.failClosed, true);
+  assert.equal(isBusinessPublicEntryVisible("not_offered"), false);
+  assert.equal(isBusinessPublicEntryVisible("available"), true);
 
   for (const planId of supportedPlanIds) {
     assert.equal(canUseBusinessIntegration({

@@ -27,3 +27,9 @@ export function canUseBusinessIntegration(input: {
     && input.offeringStatus === "available"
     && input.featureEnabled;
 }
+
+export function isBusinessPublicEntryVisible(
+  offeringStatus: BusinessOfferingStatus,
+): boolean {
+  return offeringStatus === "available";
+}
