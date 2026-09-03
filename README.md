@@ -1,12 +1,12 @@
 # Growth Engine
 
-Growth Engine is the internal Business-plan growth layer for Professional Studio products.
+Growth Engine is the internal implementation foundation for the future Business-plan growth layer of Professional Studio products. Business is currently not offered publicly.
 
 Initial target:
 
 - Professional Studio: Numeria Studio
 - End user: independent fortune tellers using Numeria Studio
-- Positioning: Business-plan feature set inside Numeria Studio, not a standalone product
+- Positioning: future Business-plan feature set inside Numeria Studio and Velvet, not a standalone public product
 
 ## Product Definition
 
@@ -76,7 +76,7 @@ GROWTH_REPOSITORY_DRIVER=d1
 
 1. Growth Engine is for owned Professional Studio products.
 2. The initial Professional Studio is Numeria Studio.
-3. Growth Engine is unlocked by the Business plan.
+3. When Business is released, Growth Engine access requires the Business plan, an available offering state, and the enabled Business integration flag. Free and Pro do not unlock it.
 4. Users see one app experience, not a separate Growth Engine app.
 5. The UI should use everyday language such as 今日やること, 集客, お客様, 予約, 売上, フォロー, リピート, 紹介, AIからの提案.
 6. Growth Engine must not duplicate SNS Planner content editing or asset management.

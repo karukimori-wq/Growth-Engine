@@ -32,6 +32,21 @@ Authentication alone, or a Free/Pro subscription, must never authorize Business 
 
 The unauthenticated Professional App selection surface follows the offering status and does not render Business navigation, reservation administration links, or the Business home action while the offering is `not_offered`. Existing owner-protected internal pilot routes remain available by direct URL for operational verification; this does not make Business publicly purchasable or visible.
 
+## API access boundary during the preparation period
+
+Existing owner-only Business APIs are internal pilot surfaces. Their shared resolver requires all of the following before the route handler can access Growth Engine records:
+
+1. a valid owner session;
+2. an active user;
+3. a workspace whose current plan is `business`;
+4. workspace identity matching when a route accepts `workspaceId`.
+
+Free and Pro must never pass this resolver. Contract tests maintain an explicit inventory of the current owner Business API routes so a new or edited route cannot silently omit the shared resolver.
+
+The future cross-app Business API is a separate boundary and must not reuse owner-session access as its entitlement model. Before that API is exposed, it must evaluate the canonical subscription entitlement, `businessOfferingStatus: available`, and `business.cross_app.flow: true` together. Missing or unreadable entitlement/flag state must deny access. No such public cross-app Business endpoint is introduced during this preparation phase.
+
+The existing Velvet Customer integration remains a narrowly scoped canonical Customer operation owned by Growth Engine. It must not be expanded into a Business entitlement bypass or return Reservation, Customer Payment, Sales, or their internal state.
+
 ## Ownership retained by Growth Engine
 
 - Customer
@@ -65,5 +80,6 @@ When Business is implemented after the Free/Pro releases:
 - contract tests verify the shared PlanId values;
 - contract tests verify Free and Pro cannot pass the Business gate;
 - contract tests verify Business remains blocked until offering availability and the feature flag are both enabled;
+- contract tests verify the current owner Business API inventory uses the shared authenticated, active-user, Business-plan resolver;
 - `/contracts/status` exposes non-sensitive plan-contract metadata;
 - no Business feature, public purchase route, database migration, or D1 schema change is included.
