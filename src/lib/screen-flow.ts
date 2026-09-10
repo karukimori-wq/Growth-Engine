@@ -1,8 +1,22 @@
 import { customers, demoWorkspace, products, todayReservations } from "@/lib/mock-data";
 
 export const practitionerUserId = demoWorkspace.ownerUserId;
-export const numeriaStudioBaseUrl = "https://numeria-studio.illusionddt.chatgpt.site";
-export const snsPlannerBaseUrl = "https://sns-planner.illusionddt.chatgpt.site";
+
+function normalizedBaseUrl(value: string | undefined, fallback: string) {
+  return (value?.trim() || fallback).replace(/\/$/, "");
+}
+
+// Server-side configuration allows Professional app domains to move without a Growth Engine code change.
+// Keep the current production endpoints as fallbacks until each independent domain cutover is verified.
+export const numeriaStudioBaseUrl = normalizedBaseUrl(
+  process.env.NUMERIA_STUDIO_BASE_URL,
+  "https://numeria-studio.illusionddt.chatgpt.site"
+);
+export const velvetBaseUrl = normalizedBaseUrl(process.env.VELVET_BASE_URL, "");
+export const snsPlannerBaseUrl = normalizedBaseUrl(
+  process.env.SNS_PLANNER_BASE_URL,
+  "https://sns-planner.illusionddt.chatgpt.site"
+);
 
 export const mvpReportRef = {
   reportId: "report_reference_pending_mvp",
