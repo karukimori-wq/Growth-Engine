@@ -16,6 +16,7 @@ const velvetRoute = await readFile(
   "utf8"
 );
 const envExample = await readFile(new URL("../.env.example", import.meta.url), "utf8");
+const wranglerConfig = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 
 test("Numeria handoff and integration check use configurable server-side base URL", () => {
   assert.match(screenFlow, /process\.env\.NUMERIA_STUDIO_BASE_URL/);
@@ -57,4 +58,12 @@ test("professional app endpoint variables are documented without secret values",
   assert.match(envExample, /VELVET_BASE_URL=/);
   assert.match(envExample, /SNS_PLANNER_BASE_URL=/);
   assert.doesNotMatch(envExample, /VELVET_INTEGRATION_SECRET=[^\n]*[A-Za-z0-9]{20,}/);
+});
+
+test("Cloudflare runtime variables match the Professional endpoint names used by code", () => {
+  assert.match(wranglerConfig, /"NUMERIA_STUDIO_BASE_URL"/);
+  assert.match(wranglerConfig, /"VELVET_BASE_URL"/);
+  assert.match(wranglerConfig, /"SNS_PLANNER_BASE_URL"/);
+  assert.doesNotMatch(wranglerConfig, /"NUMERIA_STUDIO_URL"/);
+  assert.doesNotMatch(wranglerConfig, /"VELVET_URL"/);
 });
