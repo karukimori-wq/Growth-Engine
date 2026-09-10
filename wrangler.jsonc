@@ -8,8 +8,9 @@
   "vars": {
     "GROWTH_REPOSITORY_DRIVER": "d1",
     "AI_PLATFORM_CORE_URL": "https://ai-platform-core.karukimori.workers.dev",
-    "NUMERIA_STUDIO_URL": "https://numeria-studio.karukimori.workers.dev",
-    "VELVET_URL": "https://velvet.karukimori.workers.dev"
+    "NUMERIA_STUDIO_BASE_URL": "https://numeria-studio.com",
+    "VELVET_BASE_URL": "https://velvet.karukimori.workers.dev",
+    "SNS_PLANNER_BASE_URL": "https://sns-planner.illusionddt.chatgpt.site"
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "growth-engine", "database_id": "00000000-0000-0000-0000-000000000000" }
