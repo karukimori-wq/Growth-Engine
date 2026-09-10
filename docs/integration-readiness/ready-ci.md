@@ -1,0 +1,3 @@
+# Ready CI
+
+Open PR.
