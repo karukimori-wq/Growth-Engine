@@ -1,15 +1,22 @@
 export const supportedPlanIds = ["free", "pro", "business"] as const;
 
 export type SharedPlanId = (typeof supportedPlanIds)[number];
-export type BusinessOfferingStatus = "not_offered" | "available";
+export type BusinessAvailabilityStatus = "preparing" | "unavailable" | "available";
+
+/** @deprecated Use BusinessAvailabilityStatus for new Business release readiness code. */
+export type BusinessOfferingStatus = BusinessAvailabilityStatus;
 
 export const businessPlanContract = {
   planIdField: "planId",
-  businessOfferingStatus: "not_offered" as const,
+  businessAvailabilityStatus: "unavailable" as const,
+  businessOfferingStatus: "unavailable" as const,
   featureFlagKey: "business.cross_app.flow",
   featureFlagDefault: false,
   requiredPlanId: "business" as const,
+  publicEntryVisibleWhileUnavailable: false,
+  /** @deprecated Use publicEntryVisibleWhileUnavailable. */
   publicEntryVisibleWhileNotOffered: false,
+  normalUserPurchaseVisible: false,
   failClosed: true,
 } as const;
 
@@ -20,16 +27,22 @@ export function isSharedPlanId(value: unknown): value is SharedPlanId {
 
 export function canUseBusinessIntegration(input: {
   planId: SharedPlanId;
-  offeringStatus: BusinessOfferingStatus;
+  availabilityStatus: BusinessAvailabilityStatus;
   featureEnabled: boolean;
 }): boolean {
   return input.planId === businessPlanContract.requiredPlanId
-    && input.offeringStatus === "available"
+    && input.availabilityStatus === "available"
     && input.featureEnabled;
 }
 
 export function isBusinessPublicEntryVisible(
-  offeringStatus: BusinessOfferingStatus,
+  availabilityStatus: BusinessAvailabilityStatus,
 ): boolean {
-  return offeringStatus === "available";
+  return availabilityStatus === "available";
+}
+
+export function isBusinessPurchasableByNormalUser(
+  availabilityStatus: BusinessAvailabilityStatus,
+): boolean {
+  return availabilityStatus === "available";
 }
