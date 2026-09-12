@@ -1,5 +1,10 @@
 import packageJson from "../../package.json";
 import {
+  growthEngineSourceOfTruth,
+  professionalReturnAllowedFields,
+  professionalReturnForbiddenFields,
+} from "@/domain/business-boundary";
+import {
   businessPlanContract,
   supportedPlanIds
 } from "@/domain/plan-contract";
@@ -25,11 +30,14 @@ export type ContractStatusResponse = {
   identityMode: "workspaceId+userId";
   professionalIdRequired: false;
   supportedPlanIds: typeof supportedPlanIds;
+  businessAvailabilityStatus: typeof businessPlanContract.businessAvailabilityStatus;
   businessOfferingStatus: typeof businessPlanContract.businessOfferingStatus;
   businessFeatureFlagKey: typeof businessPlanContract.featureFlagKey;
   businessFeatureFlagDefault: typeof businessPlanContract.featureFlagDefault;
   businessAccessFailClosed: typeof businessPlanContract.failClosed;
+  publicBusinessEntryVisibleWhileUnavailable: typeof businessPlanContract.publicEntryVisibleWhileUnavailable;
   publicBusinessEntryVisibleWhileNotOffered: typeof businessPlanContract.publicEntryVisibleWhileNotOffered;
+  normalUserBusinessPurchaseVisible: typeof businessPlanContract.normalUserPurchaseVisible;
   saasSubscriptionPaymentSeparatedFromCustomerPayment: true;
   usesLegacyEventNames: boolean;
   usesReportTerminology: boolean;
@@ -56,6 +64,9 @@ export type ContractStatusResponse = {
   communicationPlannerReturnedReferences: string[];
   communicationPlannerBusinessBoundary: Record<string, string>;
   messageDraftOperations: string[];
+  growthEngineSourceOfTruth: typeof growthEngineSourceOfTruth;
+  professionalReturnAllowedFields: typeof professionalReturnAllowedFields;
+  professionalReturnForbiddenFields: typeof professionalReturnForbiddenFields;
   sourceOfTruth: Record<string, boolean | string>;
   monitoredStableEvents: string[];
   deniedCrossAppFields: string[];
@@ -76,11 +87,14 @@ export function getContractStatus(): ContractStatusResponse {
     identityMode: "workspaceId+userId",
     professionalIdRequired: false,
     supportedPlanIds,
+    businessAvailabilityStatus: businessPlanContract.businessAvailabilityStatus,
     businessOfferingStatus: businessPlanContract.businessOfferingStatus,
     businessFeatureFlagKey: businessPlanContract.featureFlagKey,
     businessFeatureFlagDefault: businessPlanContract.featureFlagDefault,
     businessAccessFailClosed: businessPlanContract.failClosed,
+    publicBusinessEntryVisibleWhileUnavailable: businessPlanContract.publicEntryVisibleWhileUnavailable,
     publicBusinessEntryVisibleWhileNotOffered: businessPlanContract.publicEntryVisibleWhileNotOffered,
+    normalUserBusinessPurchaseVisible: businessPlanContract.normalUserPurchaseVisible,
     saasSubscriptionPaymentSeparatedFromCustomerPayment: true,
     usesLegacyEventNames,
     usesReportTerminology,
@@ -202,12 +216,17 @@ export function getContractStatus(): ContractStatusResponse {
       "MessageDraft.Rewrite",
       "MessageDraft.Metadata"
     ],
+    growthEngineSourceOfTruth,
+    professionalReturnAllowedFields,
+    professionalReturnForbiddenFields,
     sourceOfTruth: {
       customer: "growth-engine",
       lead: "growth-engine",
       reservation: "growth-engine",
       payment: "growth-engine",
       sales: "growth-engine",
+      publicSite: "growth-engine",
+      businessPlanWorkflow: "growth-engine",
       followup: "growth-engine",
       repeat: "growth-engine",
       referral: "growth-engine",
