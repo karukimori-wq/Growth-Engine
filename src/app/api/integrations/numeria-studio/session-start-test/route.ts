@@ -4,7 +4,7 @@ import { appName, getTimestamp } from "@/server/app-metadata";
 
 const numeriaStudioBaseUrl = (
   process.env.NUMERIA_STUDIO_BASE_URL?.trim() ||
-  "https://numeria-studio.illusionddt.chatgpt.site"
+  "https://numeria-studio.com"
 ).replace(/\/$/, "");
 const numeriaStudioSessionStartUrl = `${numeriaStudioBaseUrl}/api/sessions/start`;
 
