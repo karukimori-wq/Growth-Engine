@@ -21,6 +21,10 @@ const wranglerConfig = await readFile(new URL("../wrangler.jsonc", import.meta.u
 test("Numeria handoff and integration check use configurable server-side base URL", () => {
   assert.match(screenFlow, /process\.env\.NUMERIA_STUDIO_BASE_URL/);
   assert.match(numeriaRoute, /process\.env\.NUMERIA_STUDIO_BASE_URL/);
+  assert.match(screenFlow, /https:\/\/numeria-studio\.com/);
+  assert.match(numeriaRoute, /https:\/\/numeria-studio\.com/);
+  assert.doesNotMatch(screenFlow, /numeria-studio\.illusionddt\.chatgpt\.site/);
+  assert.doesNotMatch(numeriaRoute, /numeria-studio\.illusionddt\.chatgpt\.site/);
   assert.match(screenFlow, /\/app\/growth\/start/);
   assert.match(numeriaRoute, /\/api\/sessions\/start/);
 
