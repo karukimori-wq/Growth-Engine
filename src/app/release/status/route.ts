@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { growthEngineSourceOfTruth } from "@/domain/business-boundary";
 import { businessPlanContract } from "@/domain/plan-contract";
+import { isBusinessCrossAppFlowEnabled } from "@/server/business-integration-access";
 import {
   appName,
   appVersion,
@@ -12,6 +13,7 @@ import {
 export async function GET() {
   const aiPlatformCoreConfigured = Boolean(process.env.AI_PLATFORM_CORE_URL);
   const commitSha = getCommitSha() ?? null;
+  const businessFeatureFlagEnabled = isBusinessCrossAppFlowEnabled();
 
   return NextResponse.json({
     appId: appName,
@@ -30,6 +32,14 @@ export async function GET() {
     businessPublicEntryVisible: false,
     businessFeatureFlagKey: businessPlanContract.featureFlagKey,
     businessFeatureFlagDefault: businessPlanContract.featureFlagDefault,
+    businessFeatureFlagEnabled,
+    businessIntegrationGate: {
+      status: "compliant",
+      requiredPlanId: businessPlanContract.requiredPlanId,
+      requiredAvailabilityStatus: "available",
+      featureFlagEnabled: businessFeatureFlagEnabled,
+      failClosed: businessPlanContract.failClosed
+    },
     entitlementReadiness: "compliant",
     usageReadiness: "not_applicable",
     aiPlatformCoreIntegration: {
