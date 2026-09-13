@@ -19,6 +19,7 @@ The existence of the `business` identifier does not mean Business is currently o
 - Business availability status: `unavailable`
 - Business may also be represented as `preparing` for admin-only planned/in-development visibility.
 - Business feature key / flag: `business.cross_app.flow`
+- runtime feature flag: `BUSINESS_CROSS_APP_FLOW_ENABLED=false`
 - feature flag default: disabled
 - public Business entry while unavailable or preparing: hidden
 - normal-user Business purchase visibility: hidden
@@ -45,7 +46,17 @@ Existing owner-only Business APIs are internal pilot surfaces. Their shared reso
 
 Free and Pro must never pass this resolver. Contract tests maintain an explicit inventory of the current owner Business API routes so a new or edited route cannot silently omit the shared resolver.
 
-The future cross-app Business API is a separate boundary and must not reuse owner-session access as its entitlement model. Before that API is exposed, it must evaluate the canonical subscription entitlement, `businessAvailabilityStatus: available`, and `business.cross_app.flow: true` together. Missing or unreadable entitlement/flag state must deny access. No such public cross-app Business endpoint is introduced during this preparation phase.
+The future cross-app Business API is a separate boundary and must not reuse owner-session access as its entitlement model. Before that API is exposed, it must evaluate the canonical subscription entitlement, `businessAvailabilityStatus: available`, and `business.cross_app.flow: true` together. Missing or unreadable entitlement/flag state must deny access.
+
+Growth Engine now prepares this future boundary without exposing a public endpoint:
+
+- `src/server/business-integration-access.ts` evaluates the shared Business contract and the server-only `BUSINESS_CROSS_APP_FLOW_ENABLED` flag.
+- `resolveFutureBusinessIntegrationApiContext()` is separate from the existing internal owner-pilot resolver.
+- the future resolver requires an active user, the canonical Business gate, and workspace identity matching when `workspaceId` is supplied.
+- `wrangler.jsonc` explicitly keeps `BUSINESS_CROSS_APP_FLOW_ENABLED` set to `false` while Business is unreleased.
+- `/release/status` exposes the effective flag and fail-closed gate metadata without exposing secrets.
+- the Production smoke workflow fails if the Business feature flag becomes enabled during the current Free/Pro release scope.
+- no public cross-app Business route uses the future resolver yet.
 
 The existing Velvet Customer integration remains a narrowly scoped canonical Customer operation owned by Growth Engine. It must not be expanded into a Business entitlement bypass or return Reservation, Customer Payment, Sales, or their internal state.
 
@@ -104,7 +115,7 @@ Growth Engine exposes the shared release-readiness monitoring surface without ex
 - `/auth/status`
 - `/persistence/status`
 
-`/release/status` reports Growth Engine's current role as a Free/Pro support boundary, with Business `unavailable` and not purchasable. It does not imply that Growth Engine has a public Free or Pro product tier.
+`/release/status` reports Growth Engine's current role as a Free/Pro support boundary, with Business `unavailable` and not purchasable. It also reports the effective Business feature flag as disabled and the future integration gate as fail-closed. It does not imply that Growth Engine has a public Free or Pro product tier.
 
 `/auth/status` reports only readiness metadata for the signed owner-session mechanism. Secret values and owner access codes are never returned.
 
@@ -137,6 +148,8 @@ When Business is implemented after the Free/Pro releases:
 - contract tests verify Business remains blocked until availability and the feature flag are both enabled;
 - contract tests verify normal-user Business purchase visibility is false while unavailable;
 - contract tests verify the current owner Business API inventory uses the shared authenticated, active-user, Business-plan resolver;
+- contract tests verify the future cross-app resolver is separate and fail-closed;
+- contract tests verify the runtime Business feature flag remains explicitly disabled in the current release scope;
 - contract tests verify the Professional return boundary allows only reference/status fields and rejects forbidden/unknown fields;
 - contract tests verify the Platform Admin readiness endpoints and shared persistence status implementation;
 - `/contracts/status` exposes non-sensitive plan-contract and Business-boundary metadata;
