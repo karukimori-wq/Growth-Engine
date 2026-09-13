@@ -116,6 +116,7 @@ jobs:
           if(contracts.status!=='success'||contracts.professionalIdRequired!==false||contracts.usesLegacyEventNames===true)throw new Error('Growth Engine contracts failed');
           if(contracts.businessAvailabilityStatus!=='unavailable'||contracts.normalUserBusinessPurchaseVisible!==false)throw new Error('Growth Engine Business boundary failed');
           if(releaseStatus.status!=='ready'||releaseStatus.plans?.free!=='ready'||releaseStatus.plans?.pro!=='ready'||releaseStatus.plans?.business!=='unavailable'||releaseStatus.businessPurchasable!==false||releaseStatus.businessPublicEntryVisible!==false)throw new Error('Growth Engine release readiness failed');
+          if(releaseStatus.businessFeatureFlagEnabled!==false||releaseStatus.businessIntegrationGate?.featureFlagEnabled!==false||releaseStatus.businessIntegrationGate?.failClosed!==true)throw new Error('Growth Engine Business feature flag must remain disabled');
           if(releaseStatus.entitlementReadiness!=='compliant'||releaseStatus.usageReadiness!=='not_applicable')throw new Error('Growth Engine entitlement or usage readiness failed');
           if(releaseStatus.aiPlatformCoreIntegration?.status!=='compliant'||releaseStatus.aiPlatformCoreIntegration?.endpointConfigured!==true)throw new Error('Growth Engine AI Platform Core readiness failed');
           if(releaseStatus.feedbackHubEntry?.status!=='not_applicable')throw new Error('Growth Engine Feedback Hub release scope failed');
