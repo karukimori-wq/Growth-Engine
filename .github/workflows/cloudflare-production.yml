@@ -42,6 +42,13 @@ jobs:
           test -n "$DB_ID"
           echo "D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
           node -e 'const fs=require("fs");const p="wrangler.jsonc";const s=fs.readFileSync(p,"utf8").replace("00000000-0000-0000-0000-000000000000",process.argv[1]);fs.writeFileSync(p,s)' "$DB_ID"
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='wrangler.jsonc';
+          const config=JSON.parse(fs.readFileSync(p,'utf8'));
+          config.vars={...(config.vars??{}),GIT_COMMIT_SHA:process.env.GITHUB_SHA};
+          fs.writeFileSync(p,JSON.stringify(config,null,2)+'\n');
+          NODE
           npx wrangler d1 info growth-engine
       - name: Apply D1 schema
         run: npx wrangler d1 execute growth-engine --remote --file=cloudflare/schema.sql --yes
@@ -105,10 +112,14 @@ jobs:
           const persistenceStatus=JSON.parse(fs.readFileSync('/tmp/persistence-status.json','utf8'));
           const persistence=JSON.parse(fs.readFileSync('/tmp/persistence.json','utf8'));
           if(health.status!=='success'&&health.status!=='ok')throw new Error('Growth Engine health failed');
-          if(version.appName!=='growth-engine'||!version.appVersion||!version.contractVersion)throw new Error('Growth Engine version failed');
+          if(version.appName!=='growth-engine'||!version.appVersion||!version.contractVersion||version.commitSha!==process.env.GITHUB_SHA)throw new Error('Growth Engine version failed');
           if(contracts.status!=='success'||contracts.professionalIdRequired!==false||contracts.usesLegacyEventNames===true)throw new Error('Growth Engine contracts failed');
           if(contracts.businessAvailabilityStatus!=='unavailable'||contracts.normalUserBusinessPurchaseVisible!==false)throw new Error('Growth Engine Business boundary failed');
           if(releaseStatus.status!=='ready'||releaseStatus.plans?.free!=='ready'||releaseStatus.plans?.pro!=='ready'||releaseStatus.plans?.business!=='unavailable'||releaseStatus.businessPurchasable!==false||releaseStatus.businessPublicEntryVisible!==false)throw new Error('Growth Engine release readiness failed');
+          if(releaseStatus.entitlementReadiness!=='compliant'||releaseStatus.usageReadiness!=='not_applicable')throw new Error('Growth Engine entitlement or usage readiness failed');
+          if(releaseStatus.aiPlatformCoreIntegration?.status!=='compliant'||releaseStatus.aiPlatformCoreIntegration?.endpointConfigured!==true)throw new Error('Growth Engine AI Platform Core readiness failed');
+          if(releaseStatus.feedbackHubEntry?.status!=='not_applicable')throw new Error('Growth Engine Feedback Hub release scope failed');
+          if(releaseStatus.latestDeploy?.status!=='compliant'||releaseStatus.latestDeploy?.commitSha!==process.env.GITHUB_SHA)throw new Error('Growth Engine deploy identity failed');
           if(authStatus.status!=='ready'||authStatus.authConfigured!==true||authStatus.businessPlanRequiredForOwnerBusinessApis!==true||authStatus.secretValuesExposed!==false)throw new Error('Growth Engine auth readiness failed');
           if(persistenceStatus.status!=='success'||persistenceStatus.repositoryDriver!=='d1'||persistenceStatus.d1Reachable!==true||persistenceStatus.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine public persistence readiness failed');
           if(persistence.status!=='success'||persistence.repositoryDriver!=='d1'||persistence.d1Reachable!==true||persistence.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine D1 readiness failed');
