@@ -177,6 +177,19 @@ test("Platform Admin readiness endpoints expose contract-safe monitoring surface
   assert.match(sharedPersistenceSource, /envValuesExposed:\s*false/);
 });
 
+test("Cloudflare Production smoke checks cover release, auth, persistence, and Business boundaries", () => {
+  const workflowSource = readRepositoryFile(".github/workflows/cloudflare-production.yml");
+
+  assert.match(workflowSource, /\$PRODUCTION_URL\/release\/status/);
+  assert.match(workflowSource, /\$PRODUCTION_URL\/auth\/status/);
+  assert.match(workflowSource, /\$PRODUCTION_URL\/persistence\/status/);
+  assert.match(workflowSource, /businessAvailabilityStatus!'unavailable'/);
+  assert.match(workflowSource, /normalUserBusinessPurchaseVisible!==false/);
+  assert.match(workflowSource, /releaseStatus\.plans\?\.business!'unavailable'/);
+  assert.match(workflowSource, /authStatus\.authConfigured!==true/);
+  assert.match(workflowSource, /persistenceStatus\.repositoryDriver!'d1'/);
+});
+
 test("owner Business APIs keep the shared fail-closed access resolver", () => {
   const resolverSource = readRepositoryFile("src/server/api.ts");
 
