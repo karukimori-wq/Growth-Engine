@@ -2,8 +2,11 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { appName, getTimestamp } from "@/server/app-metadata";
 
-const aiPlatformCoreActivitiesUrl =
-  "https://ai-platform-core-preview.illusionddt.chatgpt.site/api/activities";
+const aiPlatformCoreBaseUrl = (
+  process.env.AI_PLATFORM_CORE_URL ??
+  "https://ai-platform-core.karukimori.workers.dev"
+).replace(/\/+$/, "");
+const aiPlatformCoreActivitiesUrl = `${aiPlatformCoreBaseUrl}/api/activities`;
 
 const activityTestPayload = {
   workspaceId: "ws_test_001",
