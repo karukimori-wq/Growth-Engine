@@ -93,6 +93,23 @@ They must not return:
 
 Growth Engine exposes this boundary through `/contracts/status` and contract tests keep the allowed and forbidden field lists explicit.
 
+## Platform Admin readiness endpoints
+
+Growth Engine exposes the shared release-readiness monitoring surface without exposing secrets or customer business data:
+
+- `/health`
+- `/version`
+- `/contracts/status`
+- `/release/status`
+- `/auth/status`
+- `/persistence/status`
+
+`/release/status` reports Growth Engine's current role as a Free/Pro support boundary, with Business `unavailable` and not purchasable. It does not imply that Growth Engine has a public Free or Pro product tier.
+
+`/auth/status` reports only readiness metadata for the signed owner-session mechanism. Secret values and owner access codes are never returned.
+
+`/persistence/status` reuses the same D1/Postgres readiness implementation as `/api/persistence/status`, so Platform Admin and existing operational checks cannot drift onto different persistence logic.
+
 ## Two payments that must remain separate
 
 | Payment | Meaning | Handling |
@@ -121,5 +138,6 @@ When Business is implemented after the Free/Pro releases:
 - contract tests verify normal-user Business purchase visibility is false while unavailable;
 - contract tests verify the current owner Business API inventory uses the shared authenticated, active-user, Business-plan resolver;
 - contract tests verify the Professional return boundary allows only reference/status fields and rejects forbidden/unknown fields;
+- contract tests verify the Platform Admin readiness endpoints and shared persistence status implementation;
 - `/contracts/status` exposes non-sensitive plan-contract and Business-boundary metadata;
 - no Business feature, public purchase route, database migration, payment UI, refund UI, sales UI, or D1 schema change is included.
