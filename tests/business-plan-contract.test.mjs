@@ -183,11 +183,11 @@ test("Cloudflare Production smoke checks cover release, auth, persistence, and B
   assert.match(workflowSource, /\$PRODUCTION_URL\/release\/status/);
   assert.match(workflowSource, /\$PRODUCTION_URL\/auth\/status/);
   assert.match(workflowSource, /\$PRODUCTION_URL\/persistence\/status/);
-  assert.match(workflowSource, /businessAvailabilityStatus!'unavailable'/);
+  assert.match(workflowSource, /businessAvailabilityStatus!==['"]unavailable['"]/);
   assert.match(workflowSource, /normalUserBusinessPurchaseVisible!==false/);
-  assert.match(workflowSource, /releaseStatus\.plans\?\.business!'unavailable'/);
+  assert.match(workflowSource, /releaseStatus\.plans\?\.business!==['"]unavailable['"]/);
   assert.match(workflowSource, /authStatus\.authConfigured!==true/);
-  assert.match(workflowSource, /persistenceStatus\.repositoryDriver!'d1'/);
+  assert.match(workflowSource, /persistenceStatus\.repositoryDriver!==['"]d1['"]/);
 });
 
 test("owner Business APIs keep the shared fail-closed access resolver", () => {
