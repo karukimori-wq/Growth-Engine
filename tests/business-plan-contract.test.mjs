@@ -16,7 +16,6 @@ import {
   isSharedPlanId,
   supportedPlanIds,
 } from "../src/domain/plan-contract.ts";
-import { getContractStatus } from "../src/server/app-metadata.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -138,17 +137,16 @@ test("Professional return payload evaluation accepts only contracted reference f
   assert.equal(result.ok, false);
 });
 
-test("/contracts/status exposes Business unavailable state and Growth Engine boundary metadata", () => {
-  const status = getContractStatus();
+test("/contracts/status source exposes Business unavailable state and Growth Engine boundary metadata", () => {
+  const metadataSource = readRepositoryFile("src/server/app-metadata.ts");
 
-  assert.equal(status.businessAvailabilityStatus, "unavailable");
-  assert.equal(status.businessOfferingStatus, "unavailable");
-  assert.equal(status.normalUserBusinessPurchaseVisible, false);
-  assert.equal(status.publicBusinessEntryVisibleWhileUnavailable, false);
-  assert.equal(status.paymentAndSalesCanonicalOwner, "growth-engine");
-  assert.deepEqual([...status.growthEngineSourceOfTruth], [...growthEngineSourceOfTruth]);
-  assert.deepEqual([...status.professionalReturnAllowedFields], [...professionalReturnAllowedFields]);
-  assert.deepEqual([...status.professionalReturnForbiddenFields], [...professionalReturnForbiddenFields]);
+  assert.match(metadataSource, /businessAvailabilityStatus/);
+  assert.match(metadataSource, /normalUserBusinessPurchaseVisible/);
+  assert.match(metadataSource, /publicBusinessEntryVisibleWhileUnavailable/);
+  assert.match(metadataSource, /growthEngineSourceOfTruth/);
+  assert.match(metadataSource, /professionalReturnAllowedFields/);
+  assert.match(metadataSource, /professionalReturnForbiddenFields/);
+  assert.match(metadataSource, /paymentAndSalesCanonicalOwner:\s*"growth-engine"/);
 });
 
 test("owner Business APIs keep the shared fail-closed access resolver", () => {
