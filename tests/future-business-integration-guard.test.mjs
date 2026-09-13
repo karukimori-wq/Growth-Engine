@@ -42,3 +42,21 @@ test("release monitoring and Production smoke keep the future Business flag disa
   assert.match(workflowSource, /businessIntegrationGate\?\.featureFlagEnabled!==false/);
   assert.match(workflowSource, /businessIntegrationGate\?\.failClosed!==true/);
 });
+
+test("Professional public surfaces do not expose Business navigation while unavailable", () => {
+  const appRootSource = read("src/app/app/page.tsx");
+  const professionalHomeSource = read("src/app/app/professional/[studioKey]/page.tsx");
+  const professionalSectionSource = read("src/app/app/professional/[studioKey]/[...section]/page.tsx");
+
+  assert.doesNotMatch(appRootSource, /Business共通機能/);
+  assert.match(appRootSource, /Growth Engineは共通基盤を持ち/);
+
+  assert.match(professionalHomeSource, /isBusinessPublicEntryVisible/);
+  assert.match(professionalHomeSource, /showBusinessEntry/);
+
+  assert.match(professionalSectionSource, /businessPlanContract\.businessAvailabilityStatus/);
+  assert.match(professionalSectionSource, /isBusinessPublicEntryVisible/);
+  assert.match(professionalSectionSource, /isCustomerReference && showBusinessEntry/);
+  assert.match(professionalSectionSource, /showBusinessEntry \? \(/);
+  assert.match(professionalSectionSource, /href="\/app\/business"/);
+});
