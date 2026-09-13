@@ -30,3 +30,13 @@ test("release status exposes Platform Admin monitoring metadata without claiming
   assert.match(releaseStatusSource, /businessPurchasable:\s*false/);
   assert.match(releaseStatusSource, /businessPublicEntryVisible:\s*false/);
 });
+
+test("Cloudflare Production injects and verifies the deployed commit SHA", () => {
+  const workflowSource = read(".github/workflows/cloudflare-production.yml");
+
+  assert.match(workflowSource, /GIT_COMMIT_SHA:process\.env\.GITHUB_SHA/);
+  assert.match(workflowSource, /version\.commitSha!==process\.env\.GITHUB_SHA/);
+  assert.match(workflowSource, /releaseStatus\.latestDeploy\?\.commitSha!==process\.env\.GITHUB_SHA/);
+  assert.match(workflowSource, /releaseStatus\.latestDeploy\?\.status!==['"]compliant['"]/);
+  assert.match(workflowSource, /releaseStatus\.aiPlatformCoreIntegration\?\.status!==['"]compliant['"]/);
+});
