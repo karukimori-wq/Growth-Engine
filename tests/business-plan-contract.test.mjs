@@ -149,6 +149,34 @@ test("/contracts/status source exposes Business unavailable state and Growth Eng
   assert.match(metadataSource, /paymentAndSalesCanonicalOwner:\s*"growth-engine"/);
 });
 
+test("Platform Admin readiness endpoints expose contract-safe monitoring surfaces", () => {
+  const releaseStatusSource = readRepositoryFile("src/app/release/status/route.ts");
+  const authStatusSource = readRepositoryFile("src/app/auth/status/route.ts");
+  const publicPersistenceSource = readRepositoryFile("src/app/persistence/status/route.ts");
+  const apiPersistenceSource = readRepositoryFile("src/app/api/persistence/status/route.ts");
+  const sharedPersistenceSource = readRepositoryFile("src/server/persistence-status.ts");
+
+  assert.match(releaseStatusSource, /releaseScope:\s*"free-pro-support-boundary"/);
+  assert.match(releaseStatusSource, /free:\s*"ready"/);
+  assert.match(releaseStatusSource, /pro:\s*"ready"/);
+  assert.match(releaseStatusSource, /business:\s*businessPlanContract\.businessAvailabilityStatus/);
+  assert.match(releaseStatusSource, /businessPurchasable:\s*false/);
+  assert.match(releaseStatusSource, /businessPublicEntryVisible:\s*false/);
+  assert.match(releaseStatusSource, /professional-platform-contracts\/docs\/contracts\/plan-contract\.md/);
+
+  assert.match(authStatusSource, /isProductionAuthConfigured\(\)/);
+  assert.match(authStatusSource, /authMode:\s*"signed-owner-session"/);
+  assert.match(authStatusSource, /activeUserRequired:\s*true/);
+  assert.match(authStatusSource, /businessPlanRequiredForOwnerBusinessApis:\s*true/);
+  assert.match(authStatusSource, /secretValuesExposed:\s*false/);
+
+  assert.match(publicPersistenceSource, /getPersistenceStatus\(\)/);
+  assert.match(apiPersistenceSource, /getPersistenceStatus\(\)/);
+  assert.match(sharedPersistenceSource, /databaseBackedPersistenceReady/);
+  assert.match(sharedPersistenceSource, /d1Reachable/);
+  assert.match(sharedPersistenceSource, /envValuesExposed:\s*false/);
+});
+
 test("owner Business APIs keep the shared fail-closed access resolver", () => {
   const resolverSource = readRepositoryFile("src/server/api.ts");
 
