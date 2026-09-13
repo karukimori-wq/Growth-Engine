@@ -7,10 +7,10 @@ function normalizedBaseUrl(value: string | undefined, fallback: string) {
 }
 
 // Server-side configuration allows Professional app domains to move without a Growth Engine code change.
-// Keep the current production endpoints as fallbacks until each independent domain cutover is verified.
+// Keep the current production endpoints as safe fallbacks when an optional override is absent.
 export const numeriaStudioBaseUrl = normalizedBaseUrl(
   process.env.NUMERIA_STUDIO_BASE_URL,
-  "https://numeria-studio.illusionddt.chatgpt.site"
+  "https://numeria-studio.com"
 );
 export const velvetBaseUrl = normalizedBaseUrl(process.env.VELVET_BASE_URL, "");
 export const snsPlannerBaseUrl = normalizedBaseUrl(
