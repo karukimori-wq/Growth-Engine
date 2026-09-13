@@ -60,3 +60,23 @@ test("Professional public surfaces do not expose Business navigation while unava
   assert.match(professionalSectionSource, /showBusinessEntry \? \(/);
   assert.match(professionalSectionSource, /href="\/app\/business"/);
 });
+
+test("Business UI direct routes stay behind the signed owner-session middleware", () => {
+  const middlewareSource = read("src/middleware.ts");
+  const signInPageSource = read("src/app/app/sign-in/page.tsx");
+  const signInRouteSource = read("src/app/api/auth/sign-in/route.ts");
+
+  assert.match(middlewareSource, /pathname\.startsWith\("\/app\/business"\)/);
+  assert.match(middlewareSource, /verifySessionToken/);
+  assert.match(middlewareSource, /authSessionCookieName/);
+  assert.match(middlewareSource, /pathname = "\/app\/sign-in"/);
+  assert.match(middlewareSource, /matcher:\s*\["\/app\/business\/:path\*"\]/);
+
+  assert.match(signInPageSource, /params\.next\?\.startsWith\("\/app\/business"\)/);
+  assert.match(signInRouteSource, /nextValue\.startsWith\("\/app\/business"\)/);
+  assert.match(signInRouteSource, /isValidOwnerAccessCode/);
+  assert.match(signInRouteSource, /createOwnerSessionToken/);
+  assert.match(signInRouteSource, /httpOnly:\s*true/);
+  assert.match(signInRouteSource, /sameSite:\s*"lax"/);
+  assert.match(signInRouteSource, /secure:\s*true/);
+});
