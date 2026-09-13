@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { businessPlanContract, isBusinessPublicEntryVisible } from "@/domain/plan-contract";
 import { getProfessionalApp } from "@/lib/professional-app-registry";
 
 type Props = {
@@ -16,6 +17,9 @@ const sectionTitles: Record<string, string> = {
 export default async function ProfessionalAppComingSoonPage({ params }: Props) {
   const { studioKey, section } = await params;
   const app = getProfessionalApp(studioKey);
+  const showBusinessEntry = isBusinessPublicEntryVisible(
+    businessPlanContract.businessAvailabilityStatus,
+  );
 
   if (app.studioKey !== studioKey) {
     notFound();
@@ -41,13 +45,15 @@ export default async function ProfessionalAppComingSoonPage({ params }: Props) {
           </dd>
         </dl>
         <div className="action-row">
-          {isCustomerReference ? (
+          {isCustomerReference && showBusinessEntry ? (
             <a className="button" href="/app/business/customers">
               Growth Engineのお客様を開く
             </a>
           ) : null}
           <a className="button" href={`/app/professional/${app.studioKey}`}>{app.studioName}へ戻る</a>
-          <a className="button secondary" href="/app/business">Businessホームへ戻る</a>
+          {showBusinessEntry ? (
+            <a className="button secondary" href="/app/business">Businessホームへ戻る</a>
+          ) : null}
         </div>
       </section>
     </main>
