@@ -40,12 +40,19 @@ export async function GET() {
       featureFlagEnabled: businessFeatureFlagEnabled,
       failClosed: businessPlanContract.failClosed
     },
+    operationalTestAccess: {
+      status: "compliant",
+      mode: "signed-owner-session",
+      public: false,
+      protectedPrefix: "/api/integrations/"
+    },
     entitlementReadiness: "compliant",
     usageReadiness: "not_applicable",
     aiPlatformCoreIntegration: {
       status: aiPlatformCoreConfigured ? "compliant" : "warning",
       endpointConfigured: aiPlatformCoreConfigured,
-      activityTestEndpoint: "/api/integrations/ai-platform-core/activity-test"
+      activityTestEndpoint: "/api/integrations/ai-platform-core/activity-test",
+      activityTestAccess: "signed-owner-session"
     },
     feedbackHubEntry: {
       status: "not_applicable",

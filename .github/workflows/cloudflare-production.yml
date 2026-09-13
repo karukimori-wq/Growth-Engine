@@ -102,6 +102,12 @@ jobs:
           curl --fail --silent --show-error "$PRODUCTION_URL/auth/status" | tee /tmp/auth-status.json
           curl --fail --silent --show-error "$PRODUCTION_URL/persistence/status" | tee /tmp/persistence-status.json
           curl --fail --silent --show-error "$PRODUCTION_URL/api/persistence/status" | tee /tmp/persistence.json
+          OPERATIONAL_TEST_STATUS=$(curl --silent --show-error --output /tmp/operational-test.json --write-out "%{http_code}" -X POST "$PRODUCTION_URL/api/integrations/ai-platform-core/activity-test")
+          if [ "$OPERATIONAL_TEST_STATUS" != "401" ]; then
+            cat /tmp/operational-test.json
+            echo "Expected unauthenticated operational integration test to return 401, got $OPERATIONAL_TEST_STATUS"
+            exit 1
+          fi
           node - <<'NODE'
           const fs=require('node:fs');
           const health=JSON.parse(fs.readFileSync('/tmp/health.json','utf8'));
@@ -117,8 +123,9 @@ jobs:
           if(contracts.businessAvailabilityStatus!=='unavailable'||contracts.normalUserBusinessPurchaseVisible!==false)throw new Error('Growth Engine Business boundary failed');
           if(releaseStatus.status!=='ready'||releaseStatus.plans?.free!=='ready'||releaseStatus.plans?.pro!=='ready'||releaseStatus.plans?.business!=='unavailable'||releaseStatus.businessPurchasable!==false||releaseStatus.businessPublicEntryVisible!==false)throw new Error('Growth Engine release readiness failed');
           if(releaseStatus.businessFeatureFlagEnabled!==false||releaseStatus.businessIntegrationGate?.featureFlagEnabled!==false||releaseStatus.businessIntegrationGate?.failClosed!==true)throw new Error('Growth Engine Business feature flag must remain disabled');
+          if(releaseStatus.operationalTestAccess?.status!=='compliant'||releaseStatus.operationalTestAccess?.mode!=='signed-owner-session'||releaseStatus.operationalTestAccess?.public!==false)throw new Error('Growth Engine operational integration tests must stay owner-only');
           if(releaseStatus.entitlementReadiness!=='compliant'||releaseStatus.usageReadiness!=='not_applicable')throw new Error('Growth Engine entitlement or usage readiness failed');
-          if(releaseStatus.aiPlatformCoreIntegration?.status!=='compliant'||releaseStatus.aiPlatformCoreIntegration?.endpointConfigured!==true)throw new Error('Growth Engine AI Platform Core readiness failed');
+          if(releaseStatus.aiPlatformCoreIntegration?.status!=='compliant'||releaseStatus.aiPlatformCoreIntegration?.endpointConfigured!==true||releaseStatus.aiPlatformCoreIntegration?.activityTestAccess!=='signed-owner-session')throw new Error('Growth Engine AI Platform Core readiness failed');
           if(releaseStatus.feedbackHubEntry?.status!=='not_applicable')throw new Error('Growth Engine Feedback Hub release scope failed');
           if(releaseStatus.latestDeploy?.status!=='compliant'||releaseStatus.latestDeploy?.commitSha!==process.env.GITHUB_SHA)throw new Error('Growth Engine deploy identity failed');
           if(authStatus.status!=='ready'||authStatus.authConfigured!==true||authStatus.businessPlanRequiredForOwnerBusinessApis!==true||authStatus.secretValuesExposed!==false)throw new Error('Growth Engine auth readiness failed');

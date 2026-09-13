@@ -70,7 +70,7 @@ test("Business UI direct routes stay behind the signed owner-session middleware"
   assert.match(middlewareSource, /verifySessionToken/);
   assert.match(middlewareSource, /authSessionCookieName/);
   assert.match(middlewareSource, /pathname = "\/app\/sign-in"/);
-  assert.match(middlewareSource, /matcher:\s*\["\/app\/business\/:path\*"\]/);
+  assert.match(middlewareSource, /"\/app\/business\/:path\*"/);
 
   assert.match(signInPageSource, /params\.next\?\.startsWith\("\/app\/business"\)/);
   assert.match(signInRouteSource, /nextValue\.startsWith\("\/app\/business"\)/);
@@ -79,4 +79,38 @@ test("Business UI direct routes stay behind the signed owner-session middleware"
   assert.match(signInRouteSource, /httpOnly:\s*true/);
   assert.match(signInRouteSource, /sameSite:\s*"lax"/);
   assert.match(signInRouteSource, /secure:\s*true/);
+});
+
+test("operational integration test APIs require the signed owner session", () => {
+  const middlewareSource = read("src/middleware.ts");
+  const releaseStatusSource = read("src/app/release/status/route.ts");
+  const workflowSource = read(".github/workflows/cloudflare-production.yml");
+  const protectedTestPaths = [
+    "/api/integrations/ai-platform-core/activity-test",
+    "/api/integrations/communication-planner/handoff-test",
+    "/api/integrations/numeria-studio/session-start-test",
+    "/api/integrations/sns-planner/message-draft-test",
+    "/api/integrations/sns-planner/post-draft-test",
+    "/api/integrations/velvet/handoff-test",
+    "/api/integrations/velvet/visit-start-test",
+  ];
+
+  for (const path of protectedTestPaths) {
+    assert.ok(middlewareSource.includes(`"${path}"`), `${path} must be protected by middleware`);
+  }
+
+  assert.match(middlewareSource, /isOperationalTestApi/);
+  assert.match(middlewareSource, /Authenticated owner session is required/);
+  assert.match(middlewareSource, /status:\s*401/);
+  assert.match(middlewareSource, /"\/api\/integrations\/:path\*"/);
+
+  assert.match(releaseStatusSource, /operationalTestAccess/);
+  assert.match(releaseStatusSource, /mode:\s*"signed-owner-session"/);
+  assert.match(releaseStatusSource, /public:\s*false/);
+  assert.match(releaseStatusSource, /activityTestAccess:\s*"signed-owner-session"/);
+
+  assert.match(workflowSource, /OPERATIONAL_TEST_STATUS/);
+  assert.match(workflowSource, /ai-platform-core\/activity-test/);
+  assert.match(workflowSource, /OPERATIONAL_TEST_STATUS" != "401"/);
+  assert.match(workflowSource, /operationalTestAccess\?\.public!==false/);
 });
