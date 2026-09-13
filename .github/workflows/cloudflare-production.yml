@@ -91,16 +91,26 @@ jobs:
           curl --fail --silent --show-error "$PRODUCTION_URL/health" | tee /tmp/health.json
           curl --fail --silent --show-error "$PRODUCTION_URL/version" | tee /tmp/version.json
           curl --fail --silent --show-error "$PRODUCTION_URL/contracts/status" | tee /tmp/contracts.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/release/status" | tee /tmp/release-status.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/auth/status" | tee /tmp/auth-status.json
+          curl --fail --silent --show-error "$PRODUCTION_URL/persistence/status" | tee /tmp/persistence-status.json
           curl --fail --silent --show-error "$PRODUCTION_URL/api/persistence/status" | tee /tmp/persistence.json
           node - <<'NODE'
           const fs=require('node:fs');
           const health=JSON.parse(fs.readFileSync('/tmp/health.json','utf8'));
           const version=JSON.parse(fs.readFileSync('/tmp/version.json','utf8'));
           const contracts=JSON.parse(fs.readFileSync('/tmp/contracts.json','utf8'));
+          const releaseStatus=JSON.parse(fs.readFileSync('/tmp/release-status.json','utf8'));
+          const authStatus=JSON.parse(fs.readFileSync('/tmp/auth-status.json','utf8'));
+          const persistenceStatus=JSON.parse(fs.readFileSync('/tmp/persistence-status.json','utf8'));
           const persistence=JSON.parse(fs.readFileSync('/tmp/persistence.json','utf8'));
           if(health.status!=='success'&&health.status!=='ok')throw new Error('Growth Engine health failed');
           if(version.appName!=='growth-engine'||!version.appVersion||!version.contractVersion)throw new Error('Growth Engine version failed');
           if(contracts.status!=='success'||contracts.professionalIdRequired!==false||contracts.usesLegacyEventNames===true)throw new Error('Growth Engine contracts failed');
+          if(contracts.businessAvailabilityStatus!=='unavailable'||contracts.normalUserBusinessPurchaseVisible!==false)throw new Error('Growth Engine Business boundary failed');
+          if(releaseStatus.status!=='ready'||releaseStatus.plans?.free!=='ready'||releaseStatus.plans?.pro!=='ready'||releaseStatus.plans?.business!=='unavailable'||releaseStatus.businessPurchasable!==false||releaseStatus.businessPublicEntryVisible!==false)throw new Error('Growth Engine release readiness failed');
+          if(authStatus.status!=='ready'||authStatus.authConfigured!==true||authStatus.businessPlanRequiredForOwnerBusinessApis!==true||authStatus.secretValuesExposed!==false)throw new Error('Growth Engine auth readiness failed');
+          if(persistenceStatus.status!=='success'||persistenceStatus.repositoryDriver!=='d1'||persistenceStatus.d1Reachable!==true||persistenceStatus.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine public persistence readiness failed');
           if(persistence.status!=='success'||persistence.repositoryDriver!=='d1'||persistence.d1Reachable!==true||persistence.databaseBackedPersistenceReady!==true)throw new Error('Growth Engine D1 readiness failed');
           NODE
       - name: Create owner session
