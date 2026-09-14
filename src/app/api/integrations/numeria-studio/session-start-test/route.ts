@@ -8,12 +8,12 @@ const numeriaStudioBaseUrl = (
 ).replace(/\/$/, "");
 const numeriaStudioSessionStartUrl = `${numeriaStudioBaseUrl}/api/sessions/start`;
 
-const sessionStartTestPayload = {
+const sessionStartTestPayloadBase = {
   workspaceId: "ws_test_001",
   userId: "user_test_owner_001",
   sourceApp: "growth-engine",
   reservationId: "reservation_test_001",
-  customerRef: { customerId: "customer_test_001" },
+  customerId: "customer_test_001",
   sessionType: "numerology",
   intent: "start_appraisal_session"
 };
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
   const traceId = request.headers.get("X-Trace-Id") ?? createId("trace");
   const correlationId = request.headers.get("X-Correlation-Id") ?? createId("corr");
   const requestId = createId("req");
+  const sessionStartTestPayload = { ...sessionStartTestPayloadBase, traceId, correlationId };
   const inboundSourceApp = request.headers.get("X-Source-App") ?? sessionStartTestPayload.sourceApp;
   try {
     const upstreamStartedAtMs = Date.now();

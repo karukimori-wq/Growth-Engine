@@ -65,6 +65,17 @@ test("Numeria handoff sends the formal reference and trace context without Growt
   assert.match(reservationDetailPage, /intent:\s*["']start_appraisal_session["']/);
 });
 
+test("Numeria operational session-start check sends the canonical reference and trace fields in the request body", () => {
+  assert.match(numeriaRoute, /workspaceId:\s*["']ws_test_001["']/);
+  assert.match(numeriaRoute, /userId:\s*["']user_test_owner_001["']/);
+  assert.match(numeriaRoute, /reservationId:\s*["']reservation_test_001["']/);
+  assert.match(numeriaRoute, /customerId:\s*["']customer_test_001["']/);
+  assert.doesNotMatch(numeriaRoute, /customerRef\s*:/);
+  assert.match(numeriaRoute, /const sessionStartTestPayload\s*=\s*\{[\s\S]*\.\.\.sessionStartTestPayloadBase,[\s\S]*traceId,[\s\S]*correlationId[\s\S]*\}/);
+  assert.match(numeriaRoute, /body:\s*JSON\.stringify\(sessionStartTestPayload\)/);
+  assert.doesNotMatch(numeriaRoute, /paymentStatus|salesAmount|reportBody|fullReportText|conversationText|apiKey|secretPrompt/i);
+});
+
 test("SNS Planner operational checks use the configured endpoint and current Growth Engine booking URL", () => {
   assert.match(snsPostDraftRoute, /process\.env\.SNS_PLANNER_BASE_URL/);
   assert.match(snsMessageDraftRoute, /process\.env\.SNS_PLANNER_BASE_URL/);
