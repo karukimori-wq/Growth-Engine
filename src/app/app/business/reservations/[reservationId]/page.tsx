@@ -58,16 +58,23 @@ export default async function ReservationDetailPage({ params }: Props) {
   const businessAction = getBusinessActionForStudio(reservation.professionalStudioType);
   const customerId = reservation.customerId ?? "customer_reference_pending";
   const followupId = `followup_${reservation.id}_post_session`;
-  const actionHref = reservation.professionalStudioType === "numeria"
-    ? createNumeriaStartUrl(reservation.id, customerId, reservation.workspaceId, practitionerUserId)
-    : businessAction.href ?? `/app/professional/${professionalApp.studioKey}`;
-  const handoffPayload = reservation.professionalStudioType === "numeria"
+  const numeriaHandoffRefs = reservation.professionalStudioType === "numeria"
     ? {
         workspaceId: reservation.workspaceId,
         userId: practitionerUserId,
-        sourceApp: "growth-engine",
         reservationId: reservation.id,
-        customerRef: { customerId },
+        customerId,
+        traceId: `trace_ge_numeria_${crypto.randomUUID()}`,
+        correlationId: `corr_ge_numeria_${crypto.randomUUID()}`
+      }
+    : null;
+  const actionHref = numeriaHandoffRefs
+    ? createNumeriaStartUrl(numeriaHandoffRefs)
+    : businessAction.href ?? `/app/professional/${professionalApp.studioKey}`;
+  const handoffPayload = numeriaHandoffRefs
+    ? {
+        ...numeriaHandoffRefs,
+        sourceApp: "growth-engine",
         intent: "start_appraisal_session"
       }
     : {

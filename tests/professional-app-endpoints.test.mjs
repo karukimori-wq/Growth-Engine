@@ -41,10 +41,10 @@ test("Numeria handoff and integration check use configurable server-side base UR
     reservationDetailPage,
     /import\s*\{[^}]*createNumeriaStartUrl[^}]*\}\s*from\s*["']@\/lib\/screen-flow["']/s
   );
-  assert.match(reservationDetailPage, /createNumeriaStartUrl\s*\(/);
+  assert.match(reservationDetailPage, /createNumeriaStartUrl\s*\(numeriaHandoffRefs\)/);
 });
 
-test("Numeria handoff keeps Growth Engine-owned business data out of the URL", () => {
+test("Numeria handoff sends the formal reference and trace context without Growth Engine-owned business data", () => {
   const functionStart = screenFlow.indexOf("export function createNumeriaStartUrl");
   const functionEnd = screenFlow.indexOf("export function createPostDraftBriefUrl", functionStart);
   const numeriaHandoff = screenFlow.slice(functionStart, functionEnd);
@@ -53,8 +53,16 @@ test("Numeria handoff keeps Growth Engine-owned business data out of the URL", (
   assert.match(numeriaHandoff, /userId/);
   assert.match(numeriaHandoff, /reservationId/);
   assert.match(numeriaHandoff, /customerId/);
+  assert.match(numeriaHandoff, /traceId/);
+  assert.match(numeriaHandoff, /correlationId/);
   assert.match(numeriaHandoff, /start_appraisal_session/);
   assert.doesNotMatch(numeriaHandoff, /paymentStatus|salesAmount|stripe|reportBody|transcript|apiKey|secretPrompt/i);
+
+  assert.match(reservationDetailPage, /traceId:\s*`trace_ge_numeria_\$\{crypto\.randomUUID\(\)\}`/);
+  assert.match(reservationDetailPage, /correlationId:\s*`corr_ge_numeria_\$\{crypto\.randomUUID\(\)\}`/);
+  assert.match(reservationDetailPage, /\.\.\.numeriaHandoffRefs/);
+  assert.match(reservationDetailPage, /sourceApp:\s*["']growth-engine["']/);
+  assert.match(reservationDetailPage, /intent:\s*["']start_appraisal_session["']/);
 });
 
 test("SNS Planner operational checks use the configured endpoint and current Growth Engine booking URL", () => {
