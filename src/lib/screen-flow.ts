@@ -50,6 +50,15 @@ export const mvpPostDraftBrief = {
   destinationUrl: "https://growth-engine.karukimori.workers.dev/public/booking"
 };
 
+export type NumeriaHandoffRefs = {
+  workspaceId: string;
+  userId: string;
+  reservationId: string;
+  customerId: string;
+  traceId: string;
+  correlationId: string;
+};
+
 export function getReservationForScreen(reservationId: string) {
   const reservation = todayReservations.find((item) => item.id === reservationId) ?? todayReservations[0];
   const customer = customers.find((item) => item.id === reservation.customerId) ?? customers[0];
@@ -67,17 +76,14 @@ export function getFollowupForScreen(followupId: string) {
   return { followup, reservation, customer, product };
 }
 
-export function createNumeriaStartUrl(
-  reservationId: string,
-  customerId: string,
-  workspaceId = demoWorkspace.id,
-  userId = practitionerUserId
-) {
+export function createNumeriaStartUrl(refs: NumeriaHandoffRefs) {
   const params = new URLSearchParams({
-    workspaceId,
-    userId,
-    reservationId,
-    customerId,
+    workspaceId: refs.workspaceId,
+    userId: refs.userId,
+    reservationId: refs.reservationId,
+    customerId: refs.customerId,
+    traceId: refs.traceId,
+    correlationId: refs.correlationId,
     intent: "start_appraisal_session"
   });
 
