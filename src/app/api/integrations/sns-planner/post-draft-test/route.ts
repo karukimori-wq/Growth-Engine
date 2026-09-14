@@ -2,8 +2,11 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { appName, getTimestamp } from "@/server/app-metadata";
 
-const snsPlannerPostDraftsUrl =
-  "https://sns-planner.illusionddt.chatgpt.site/api/post-drafts";
+const snsPlannerBaseUrl = (
+  process.env.SNS_PLANNER_BASE_URL?.trim() ||
+  "https://sns-planner.illusionddt.chatgpt.site"
+).replace(/\/$/, "");
+const snsPlannerPostDraftsUrl = `${snsPlannerBaseUrl}/api/post-drafts`;
 
 const postDraftTestPayload = {
   workspaceId: "ws_test_001",
@@ -16,7 +19,7 @@ const postDraftTestPayload = {
   channel: "instagram",
   cta: "予約ページを見る",
   destinationUrl:
-    "https://growth-engine-api-preview.illusionddt.chatgpt.site/test-booking"
+    "https://growth-engine.karukimori.workers.dev/public/booking"
 };
 
 type SnsPlannerResponse = {

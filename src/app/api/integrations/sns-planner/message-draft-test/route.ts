@@ -2,8 +2,11 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { appName, getTimestamp } from "@/server/app-metadata";
 
-const snsPlannerMessageDraftsUrl =
-  "https://sns-planner.illusionddt.chatgpt.site/api/message-drafts";
+const snsPlannerBaseUrl = (
+  process.env.SNS_PLANNER_BASE_URL?.trim() ||
+  "https://sns-planner.illusionddt.chatgpt.site"
+).replace(/\/$/, "");
+const snsPlannerMessageDraftsUrl = `${snsPlannerBaseUrl}/api/message-drafts`;
 
 const messageDraftTestPayload = {
   workspaceId: "ws_test_001",

@@ -11,6 +11,14 @@ const numeriaRoute = await readFile(
   new URL("../src/app/api/integrations/numeria-studio/session-start-test/route.ts", import.meta.url),
   "utf8"
 );
+const snsPostDraftRoute = await readFile(
+  new URL("../src/app/api/integrations/sns-planner/post-draft-test/route.ts", import.meta.url),
+  "utf8"
+);
+const snsMessageDraftRoute = await readFile(
+  new URL("../src/app/api/integrations/sns-planner/message-draft-test/route.ts", import.meta.url),
+  "utf8"
+);
 const velvetRoute = await readFile(
   new URL("../src/app/api/integrations/velvet/visit-start-test/route.ts", import.meta.url),
   "utf8"
@@ -47,6 +55,15 @@ test("Numeria handoff keeps Growth Engine-owned business data out of the URL", (
   assert.match(numeriaHandoff, /customerId/);
   assert.match(numeriaHandoff, /start_appraisal_session/);
   assert.doesNotMatch(numeriaHandoff, /paymentStatus|salesAmount|stripe|reportBody|transcript|apiKey|secretPrompt/i);
+});
+
+test("SNS Planner operational checks use the configured endpoint and current Growth Engine booking URL", () => {
+  assert.match(snsPostDraftRoute, /process\.env\.SNS_PLANNER_BASE_URL/);
+  assert.match(snsMessageDraftRoute, /process\.env\.SNS_PLANNER_BASE_URL/);
+  assert.match(snsPostDraftRoute, /\/api\/post-drafts/);
+  assert.match(snsMessageDraftRoute, /\/api\/message-drafts/);
+  assert.match(snsPostDraftRoute, /https:\/\/growth-engine\.karukimori\.workers\.dev\/public\/booking/);
+  assert.doesNotMatch(snsPostDraftRoute, /growth-engine-api-preview\.illusionddt\.chatgpt\.site/);
 });
 
 test("Velvet integration remains configurable and does not send Growth Engine-owned sensitive business data", () => {
