@@ -1,0 +1,76 @@
+name: Patch Production version race
+on:
+  push:
+    branches:
+      - fix/cloudflare-production-version-race
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloudflare-production-version-race
+      - name: Patch Cloudflare Production verification ordering
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/cloudflare-production.yml')
+          text = path.read_text()
+
+          secret_block = '''      - name: Configure Velvet integration secret when available
+        env:
+          VELVET_INTEGRATION_SECRET: ${{ secrets.VELVET_INTEGRATION_SECRET }}
+        run: |
+          if [ -n "$VELVET_INTEGRATION_SECRET" ]; then
+            printf '%s' "$VELVET_INTEGRATION_SECRET" | npx wrangler secret put VELVET_INTEGRATION_SECRET
+          fi
+      - name: Verify public Production endpoints
+        run: |
+          sleep 5
+'''
+
+          replacement = '''      - name: Configure Velvet integration secret when available
+        env:
+          VELVET_INTEGRATION_SECRET: ${{ secrets.VELVET_INTEGRATION_SECRET }}
+        run: |
+          if [ -n "$VELVET_INTEGRATION_SECRET" ]; then
+            printf '%s' "$VELVET_INTEGRATION_SECRET" | npx wrangler secret put VELVET_INTEGRATION_SECRET
+          fi
+      - name: Finalize Worker deployment after secret configuration
+        run: npx wrangler deploy
+      - name: Verify public Production endpoints
+        run: |
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error "$PRODUCTION_URL/version" > /tmp/version-ready.json; then
+              if node -e 'const fs=require("node:fs");const v=JSON.parse(fs.readFileSync("/tmp/version-ready.json","utf8"));process.exit(v.commitSha===process.env.GITHUB_SHA?0:1)'; then
+                echo "Production version converged to $GITHUB_SHA"
+                break
+              fi
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              cat /tmp/version-ready.json 2>/dev/null || true
+              echo "Production version did not converge to $GITHUB_SHA"
+              exit 1
+            fi
+            sleep 5
+          done
+'''
+
+          if replacement in text:
+              raise SystemExit('Production workflow is already patched')
+          if secret_block not in text:
+              raise SystemExit('Expected Production workflow anchor not found')
+          path.write_text(text.replace(secret_block, replacement, 1))
+          PY
+      - name: Remove one-shot helper
+        run: rm .github/workflows/patch-production-version-race.yml
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/cloudflare-production.yml .github/workflows/patch-production-version-race.yml
+          git commit -m "Stabilize Cloudflare Production version verification"
+          git push origin HEAD:fix/cloudflare-production-version-race
