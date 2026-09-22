@@ -1,0 +1,56 @@
+name: External Intelligence CI Result
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  record:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record verified CI result in EIS
+        env:
+          EIS_BASE_URL: https://external-intelligence-system.vercel.app
+          EIS_WORKSPACE_ID: professional-platform-dev
+          SOURCE_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          SOURCE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          oidc_response="$(curl --fail --silent --show-error \
+            --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https%3A%2F%2Fexternal-intelligence-system.vercel.app")"
+          EIS_TOKEN="$(printf '%s' "$oidc_response" | jq -r '.value // empty')"
+          if [ -z "$EIS_TOKEN" ]; then
+            echo 'External Intelligence: NOT CONNECTED (GitHub OIDC token missing)'
+            exit 0
+          fi
+          EVIDENCE_URI="${{ github.server_url }}/${{ github.repository }}/actions/runs/$SOURCE_RUN_ID"
+          payload="$(jq -n \
+            --arg workspaceId "$EIS_WORKSPACE_ID" \
+            --arg projectId "Growth-Engine" \
+            --arg appId "growth-engine" \
+            --arg componentId "web" \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg commitSha "$SOURCE_COMMIT" \
+            --arg evidenceUri "$EVIDENCE_URI" \
+            '{workspaceId:$workspaceId,projectId:$projectId,appId:$appId,componentId:$componentId,repository:$repository,commitSha:$commitSha,taskType:"ci-validation",summary:"Growth Engine main CI passed typecheck, contract tests, application build, and Cloudflare build.",outcome:"implementation_result",success:true,source:"github_actions",knowledgeTitle:"Growth Engine main CI validation completed",knowledgeStatement:"The current Growth Engine main commit passed its configured CI validation. This is implementation evidence only and does not prove current Production deployment, UI reachability, Production persistence, integrations, or human verification.",evidenceUri:$evidenceUri,fingerprint:{runtime:"cloudflare-workers",framework:"nextjs-opennext",database:"cloudflare-d1",auth:"signed-owner-session",environment:"ci",planModel:"free-pro-business-contract",appRole:"business-growth-engine",contractVersion:"professional-platform-contracts@abf17744",nodeVersion:"22"},verification:{productionDeployed:false,uiReachable:false,permissionVerified:false,requiresPersistence:true,persistenceVerified:false,requiresIntegration:true,integrationVerified:false,humanVerified:false}}')"
+          endpoint="${EIS_BASE_URL%/}/api/development/results"
+          http_code="$(curl --silent --show-error --output /tmp/eis-response.json --write-out '%{http_code}' --request POST "$endpoint" --header 'content-type: application/json' --header "authorization: Bearer $EIS_TOKEN" --data "$payload" || true)"
+          if [[ "$http_code" =~ ^2 ]]; then
+            echo 'External Intelligence: RECORDED (github_oidc)'
+            cat /tmp/eis-response.json
+            exit 0
+          fi
+          echo "External Intelligence: NOT CONNECTED (github_oidc, HTTP $http_code)" >&2
+          if [ -f /tmp/eis-response.json ]; then cat /tmp/eis-response.json >&2; fi
+          exit 0
