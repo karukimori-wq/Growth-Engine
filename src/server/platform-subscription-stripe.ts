@@ -77,17 +77,16 @@ function metadataFrom(object: StripeCheckoutSession | StripeSubscriptionObject |
   return { workspaceId, ownerUserId, productCode };
 }
 
-async function stripeFormPost(path: string, values: URLSearchParams) {
+async function stripeRequest(path: string, init: RequestInit = {}) {
   const secret = stripeSecret();
   if (!secret) throw new Error("STRIPE_SECRET_KEY is not configured.");
 
   const response = await fetch(`${stripeApiBaseUrl}${path}`, {
-    method: "POST",
+    ...init,
     headers: {
       authorization: `Bearer ${secret}`,
-      "content-type": "application/x-www-form-urlencoded",
+      ...(init.headers ?? {}),
     },
-    body: values.toString(),
   });
   const body = await response.json().catch(() => ({})) as Record<string, unknown>;
   if (!response.ok) {
@@ -97,6 +96,19 @@ async function stripeFormPost(path: string, values: URLSearchParams) {
     throw new Error(message);
   }
   return body;
+}
+
+async function stripeFormPost(path: string, values: URLSearchParams) {
+  return stripeRequest(path, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: values.toString(),
+  });
+}
+
+async function fetchStripeSubscription(subscriptionId: string) {
+  const safeId = encodeURIComponent(subscriptionId);
+  return stripeRequest(`/subscriptions/${safeId}`, { method: "GET" }) as Promise<StripeSubscriptionObject>;
 }
 
 export async function createPlatformSubscriptionCheckout(input: PlatformSubscriptionCheckoutInput): Promise<PlatformSubscriptionCheckoutResult> {
@@ -159,17 +171,21 @@ export function verifyPlatformSubscriptionStripeSignature(rawBody: string, signa
   });
 }
 
-async function markEventProcessed(eventId: string, eventType: string) {
+async function eventAlreadyProcessed(eventId: string) {
   const db = await getD1Database();
   if (!db) throw new Error("Growth Engine D1 DB binding is unavailable.");
   const existing = await db.prepare(
     "SELECT event_id FROM platform_subscription_webhook_events WHERE event_id = ? LIMIT 1",
   ).bind(eventId).first<{ event_id: string }>();
-  if (existing) return false;
+  return Boolean(existing);
+}
+
+async function recordProcessedEvent(eventId: string, eventType: string) {
+  const db = await getD1Database();
+  if (!db) throw new Error("Growth Engine D1 DB binding is unavailable.");
   await db.prepare(
-    "INSERT INTO platform_subscription_webhook_events (event_id, event_type, processed_at) VALUES (?, ?, ?)",
+    "INSERT OR IGNORE INTO platform_subscription_webhook_events (event_id, event_type, processed_at) VALUES (?, ?, ?)",
   ).bind(eventId, eventType, new Date().toISOString()).run();
-  return true;
 }
 
 function subscriptionState(status: string | undefined) {
@@ -181,6 +197,30 @@ function subscriptionState(status: string | undefined) {
     case "canceled": return { subscriptionStatus: "canceled" as const, entitlementStatus: "canceled" as const };
     default: return { subscriptionStatus: "expired" as const, entitlementStatus: "inactive" as const };
   }
+}
+
+async function persistSubscriptionState(input: {
+  scope: { workspaceId: string; ownerUserId: string; productCode: PlatformSubscriptionProductCode };
+  subscription: StripeSubscriptionObject;
+  eventId: string;
+}) {
+  const state = subscriptionState(input.subscription.status);
+  const validUntil = typeof input.subscription.current_period_end === "number"
+    ? new Date(input.subscription.current_period_end * 1000).toISOString()
+    : null;
+  const stripeSubscriptionRef = input.subscription.id ?? null;
+  const stripeCustomerRef = typeof input.subscription.customer === "string" ? input.subscription.customer : null;
+  await upsertPlatformSubscriptionEntitlement({
+    ...input.scope,
+    planId: state.entitlementStatus === "active" ? "pro" : "free",
+    ...state,
+    validUntil,
+    entitlementRef: stripeSubscriptionRef ? `stripe_sub:${stripeSubscriptionRef}` : `stripe_event:${input.eventId}`,
+    stripeCustomerRef,
+    stripeSubscriptionRef,
+    updatedAt: new Date().toISOString(),
+  });
+  return state;
 }
 
 export async function applyPlatformSubscriptionStripeWebhook(rawBody: string, signatureHeader: string | null) {
@@ -201,50 +241,40 @@ export async function applyPlatformSubscriptionStripeWebhook(rawBody: string, si
     return { ok: true as const, ignored: "unsupported_event", eventId: event.id };
   }
 
+  if (await eventAlreadyProcessed(event.id)) {
+    return { ok: true as const, ignored: "duplicate_event", eventId: event.id };
+  }
+
   const object = event.data?.object;
   const scope = metadataFrom(object);
   if (!scope) return { ok: true as const, ignored: "subscription_scope_missing", eventId: event.id };
 
-  const firstProcessing = await markEventProcessed(event.id, event.type);
-  if (!firstProcessing) return { ok: true as const, ignored: "duplicate_event", eventId: event.id };
-
-  const now = new Date().toISOString();
+  let subscription: StripeSubscriptionObject;
   if (event.type === "checkout.session.completed") {
     const session = object as StripeCheckoutSession;
-    const stripeSubscriptionRef = typeof session.subscription === "string" ? session.subscription : null;
-    const stripeCustomerRef = typeof session.customer === "string" ? session.customer : null;
-    await upsertPlatformSubscriptionEntitlement({
-      ...scope,
-      planId: "pro",
-      subscriptionStatus: "active",
-      entitlementStatus: "active",
-      validUntil: null,
-      entitlementRef: stripeSubscriptionRef ? `stripe_sub:${stripeSubscriptionRef}` : `stripe_checkout:${event.id}`,
-      stripeCustomerRef,
-      stripeSubscriptionRef,
-      updatedAt: now,
-    });
-    return { ok: true as const, applied: true, eventId: event.id, planId: "pro" as const, entitlementStatus: "active" as const };
+    const subscriptionId = typeof session.subscription === "string" ? session.subscription : "";
+    if (!subscriptionId) {
+      return { ok: false as const, status: 409, errorCode: "STRIPE_SUBSCRIPTION_REFERENCE_MISSING" };
+    }
+    subscription = await fetchStripeSubscription(subscriptionId);
+    const subscriptionScope = metadataFrom(subscription);
+    if (!subscriptionScope || subscriptionScope.workspaceId !== scope.workspaceId || subscriptionScope.ownerUserId !== scope.ownerUserId || subscriptionScope.productCode !== scope.productCode) {
+      return { ok: false as const, status: 409, errorCode: "STRIPE_SUBSCRIPTION_SCOPE_MISMATCH" };
+    }
+  } else {
+    subscription = object as StripeSubscriptionObject;
   }
 
-  const subscription = object as StripeSubscriptionObject;
-  const state = subscriptionState(subscription.status);
-  const validUntil = typeof subscription.current_period_end === "number"
-    ? new Date(subscription.current_period_end * 1000).toISOString()
-    : null;
-  const stripeSubscriptionRef = subscription.id ?? null;
-  const stripeCustomerRef = typeof subscription.customer === "string" ? subscription.customer : null;
-  await upsertPlatformSubscriptionEntitlement({
-    ...scope,
-    planId: state.entitlementStatus === "active" ? "pro" : "free",
-    ...state,
-    validUntil,
-    entitlementRef: stripeSubscriptionRef ? `stripe_sub:${stripeSubscriptionRef}` : `stripe_event:${event.id}`,
-    stripeCustomerRef,
-    stripeSubscriptionRef,
-    updatedAt: now,
-  });
-  return { ok: true as const, applied: true, eventId: event.id, planId: state.entitlementStatus === "active" ? "pro" as const : "free" as const, entitlementStatus: state.entitlementStatus };
+  const state = await persistSubscriptionState({ scope, subscription, eventId: event.id });
+  await recordProcessedEvent(event.id, event.type);
+
+  return {
+    ok: true as const,
+    applied: true,
+    eventId: event.id,
+    planId: state.entitlementStatus === "active" ? "pro" as const : "free" as const,
+    entitlementStatus: state.entitlementStatus,
+  };
 }
 
 export function platformSubscriptionStripeReadiness() {
