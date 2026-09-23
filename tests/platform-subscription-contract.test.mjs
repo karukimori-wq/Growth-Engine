@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const schema = readFileSync("cloudflare/schema.sql", "utf8");
 const repository = readFileSync("src/server/platform-subscriptions.ts", "utf8");
-const entitlementRoute = readFileSync("app/api/subscriptions/entitlement/route.ts", "utf8");
-const statusRoute = readFileSync("app/api/subscriptions/status/route.ts", "utf8");
+const entitlementRoute = readFileSync("src/app/api/subscriptions/entitlement/route.ts", "utf8");
+const statusRoute = readFileSync("src/app/api/subscriptions/status/route.ts", "utf8");
+
+test("Growth Engine keeps Next.js application routes under src/app only", () => {
+  assert.equal(existsSync("app"), false, "Do not create a root app directory; it overrides the canonical src/app tree and removes existing Production routes.");
+  assert.equal(existsSync("src/app/api/subscriptions/entitlement/route.ts"), true);
+  assert.equal(existsSync("src/app/api/subscriptions/status/route.ts"), true);
+});
 
 test("platform subscription D1 projection is separate from customer payment records", () => {
   assert.match(schema, /CREATE TABLE IF NOT EXISTS platform_subscriptions/);
