@@ -59,14 +59,14 @@ test("SaaS checkout is hosted Stripe subscription checkout and is isolated from 
 
 test("SaaS webhook uses a dedicated secret, idempotency table, and only updates subscription entitlement", () => {
   assert.match(webhookRoute, /applyPlatformSubscriptionStripeWebhook/);
-  assert.match(stripeRuntime, /PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET/);
+  assert.match(stripeRuntime, /process\.env\.PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET/);
   assert.match(stripeRuntime, /platform_subscription_webhook_events/);
   assert.match(stripeRuntime, /checkout\.session\.completed/);
   assert.match(stripeRuntime, /customer\.subscription\.updated/);
   assert.match(stripeRuntime, /customer\.subscription\.deleted/);
   assert.match(stripeRuntime, /upsertPlatformSubscriptionEntitlement/);
   assert.match(stripeRuntime, /verifyPlatformSubscriptionStripeSignature/);
-  assert.doesNotMatch(stripeRuntime, /STRIPE_WEBHOOK_SECRET/);
+  assert.doesNotMatch(stripeRuntime, /process\.env\.STRIPE_WEBHOOK_SECRET\b/);
   assert.doesNotMatch(stripeRuntime, /createPayment|createRevenue|updateReservationPaymentStatus/);
 });
 
