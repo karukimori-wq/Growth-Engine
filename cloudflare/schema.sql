@@ -84,3 +84,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS platform_subscriptions_entitlement_ref_idx
   ON platform_subscriptions (entitlement_ref);
 CREATE INDEX IF NOT EXISTS platform_subscriptions_product_status_idx
   ON platform_subscriptions (product_code, subscription_status, updated_at DESC);
+
+-- Stripe webhook idempotency for SaaS subscriptions only.
+-- It intentionally stores no payment/card/customer-service ledger data.
+CREATE TABLE IF NOT EXISTS platform_subscription_webhook_events (
+  event_id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  processed_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS platform_subscription_webhook_events_processed_idx
+  ON platform_subscription_webhook_events (processed_at DESC);

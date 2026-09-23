@@ -11,6 +11,10 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   GROWTH_ENGINE_SOURCE_POSTGRES_URL: ${{ secrets.GROWTH_ENGINE_SOURCE_POSTGRES_URL }}
   PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET: ${{ secrets.PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET }}
+  STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+  PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET: ${{ secrets.PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET }}
+  NUMERIA_PRO_STRIPE_PRICE_ID: ${{ vars.NUMERIA_PRO_STRIPE_PRICE_ID || secrets.NUMERIA_PRO_STRIPE_PRICE_ID }}
+  VELVET_PRO_STRIPE_PRICE_ID: ${{ vars.VELVET_PRO_STRIPE_PRICE_ID || secrets.VELVET_PRO_STRIPE_PRICE_ID }}
   PRODUCTION_URL: https://growth-engine.karukimori.workers.dev
 jobs:
   deploy:
@@ -101,7 +105,21 @@ jobs:
           if [ -n "$PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET" ]; then
             printf '%s' "$PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET" | npx wrangler secret put PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET
           else
-            echo "PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET is not configured; subscription readiness will remain blocked."
+            echo "PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET is not configured; subscription entitlement readiness will remain blocked."
+          fi
+      - name: Configure SaaS Stripe subscription settings when available
+        run: |
+          if [ -n "$STRIPE_SECRET_KEY" ]; then
+            printf '%s' "$STRIPE_SECRET_KEY" | npx wrangler secret put STRIPE_SECRET_KEY
+          fi
+          if [ -n "$PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET" ]; then
+            printf '%s' "$PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET" | npx wrangler secret put PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET
+          fi
+          if [ -n "$NUMERIA_PRO_STRIPE_PRICE_ID" ]; then
+            printf '%s' "$NUMERIA_PRO_STRIPE_PRICE_ID" | npx wrangler secret put NUMERIA_PRO_STRIPE_PRICE_ID
+          fi
+          if [ -n "$VELVET_PRO_STRIPE_PRICE_ID" ]; then
+            printf '%s' "$VELVET_PRO_STRIPE_PRICE_ID" | npx wrangler secret put VELVET_PRO_STRIPE_PRICE_ID
           fi
       - name: Verify public Production endpoints
         run: |
@@ -182,8 +200,14 @@ jobs:
           if(value.contract!=='platform-saas-subscription.v1')throw new Error('Platform subscription contract mismatch');
           if(value.owner!=='growth-engine')throw new Error('Growth Engine must remain canonical subscription owner');
           if(value.tableReady!==true)throw new Error('Platform subscription D1 table is not ready');
+          if(value.webhookEventTableReady!==true)throw new Error('Platform subscription webhook idempotency table is not ready');
           if(value.integrationSecretConfigured!==true)throw new Error('PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET is not configured in Growth Engine Production');
           if(value.entitlementReadReady!==true)throw new Error('Platform subscription entitlement read is not ready');
+          if(value.checkoutImplementationReady!==true)throw new Error('SaaS Stripe checkout implementation is not ready');
+          if(value.stripeSecretConfigured!==true)throw new Error('STRIPE_SECRET_KEY is not configured for SaaS subscription checkout');
+          if(value.webhookSecretConfigured!==true)throw new Error('PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET is not configured');
+          if(value.prices?.numeriaStudio!==true)throw new Error('NUMERIA_PRO_STRIPE_PRICE_ID is not configured');
+          if(value.checkoutReady!==true)throw new Error('Numeria Pro SaaS subscription checkout is not Production ready');
           if(value.businessPurchasable!==false)throw new Error('Business must remain unavailable in the Free/Pro release');
           if(value.secretValuesExposed!==false)throw new Error('Platform subscription status exposed secret values');
           NODE
