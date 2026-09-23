@@ -62,3 +62,25 @@ CREATE TABLE IF NOT EXISTS growth_persistence_roundtrip (
 
 CREATE INDEX IF NOT EXISTS growth_roundtrip_scope_idx
   ON growth_persistence_roundtrip (workspace_id, user_id, created_at DESC);
+
+-- Professional Platform SaaS subscription entitlement projection.
+-- This is separate from customer reservation/service payments and contains no card/payment details.
+CREATE TABLE IF NOT EXISTS platform_subscriptions (
+  workspace_id TEXT NOT NULL,
+  owner_user_id TEXT NOT NULL,
+  product_code TEXT NOT NULL CHECK (product_code IN ('numeria-studio', 'velvet')),
+  plan_id TEXT NOT NULL CHECK (plan_id IN ('free', 'pro')),
+  subscription_status TEXT NOT NULL CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled', 'expired')),
+  entitlement_status TEXT NOT NULL CHECK (entitlement_status IN ('active', 'inactive', 'past_due', 'canceled')),
+  valid_until TEXT,
+  entitlement_ref TEXT NOT NULL,
+  stripe_customer_ref TEXT,
+  stripe_subscription_ref TEXT,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, owner_user_id, product_code)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS platform_subscriptions_entitlement_ref_idx
+  ON platform_subscriptions (entitlement_ref);
+CREATE INDEX IF NOT EXISTS platform_subscriptions_product_status_idx
+  ON platform_subscriptions (product_code, subscription_status, updated_at DESC);
