@@ -161,42 +161,65 @@ export async function upsertPlatformSubscriptionEntitlement(input: PlatformSubsc
 
 export async function getPlatformSubscriptionReadiness() {
   const db = await getD1Database();
-  const secretConfigured = Boolean(process.env.PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET);
-  const stripeSecretConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
-  const numeriaPriceConfigured = Boolean(process.env.NUMERIA_PRO_STRIPE_PRICE_ID);
-  const velvetPriceConfigured = Boolean(process.env.VELVET_PRO_STRIPE_PRICE_ID);
+  const secretConfigured = Boolean(process.env.PLATFORM_SUBSCRIPTION_INTEGRATION_SECRET?.trim());
+  const stripeSecretConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+  const webhookSecretConfigured = Boolean(process.env.PLATFORM_SUBSCRIPTION_STRIPE_WEBHOOK_SECRET?.trim());
+  const numeriaPriceConfigured = Boolean(process.env.NUMERIA_PRO_STRIPE_PRICE_ID?.trim());
+  const velvetPriceConfigured = Boolean(process.env.VELVET_PRO_STRIPE_PRICE_ID?.trim());
+  const checkoutImplementationReady = true;
 
   if (!db) {
     return {
       status: "blocked" as const,
       d1Configured: false,
       tableReady: false,
+      webhookEventTableReady: false,
       integrationSecretConfigured: secretConfigured,
       stripeSecretConfigured,
+      webhookSecretConfigured,
       prices: { numeriaStudio: numeriaPriceConfigured, velvet: velvetPriceConfigured },
       entitlementReadReady: false,
+      checkoutImplementationReady,
       checkoutReady: false,
       secretValuesExposed: false as const,
     };
   }
 
   let tableReady = false;
+  let webhookEventTableReady = false;
   try {
     const row = await db.prepare("SELECT COUNT(*) AS count FROM platform_subscriptions").first<{ count: number }>();
     tableReady = typeof row?.count === "number";
   } catch {
     tableReady = false;
   }
+  try {
+    const row = await db.prepare("SELECT COUNT(*) AS count FROM platform_subscription_webhook_events").first<{ count: number }>();
+    webhookEventTableReady = typeof row?.count === "number";
+  } catch {
+    webhookEventTableReady = false;
+  }
+
+  const entitlementReadReady = tableReady && secretConfigured;
+  const checkoutReady = entitlementReadReady
+    && webhookEventTableReady
+    && checkoutImplementationReady
+    && stripeSecretConfigured
+    && webhookSecretConfigured
+    && numeriaPriceConfigured;
 
   return {
-    status: tableReady && secretConfigured ? "ready" as const : "blocked" as const,
+    status: entitlementReadReady ? "ready" as const : "blocked" as const,
     d1Configured: true,
     tableReady,
+    webhookEventTableReady,
     integrationSecretConfigured: secretConfigured,
     stripeSecretConfigured,
+    webhookSecretConfigured,
     prices: { numeriaStudio: numeriaPriceConfigured, velvet: velvetPriceConfigured },
-    entitlementReadReady: tableReady && secretConfigured,
-    checkoutReady: tableReady && secretConfigured && stripeSecretConfigured && numeriaPriceConfigured,
+    entitlementReadReady,
+    checkoutImplementationReady,
+    checkoutReady,
     businessPurchasable: false,
     secretValuesExposed: false as const,
   };
